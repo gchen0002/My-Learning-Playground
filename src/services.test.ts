@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { exercises, quizQuestions, topics } from './content';
+import { challenges, exercises, quizQuestions, topics } from './content';
 import {
   createMockInterviewPrompt,
   exportLocalData,
@@ -90,6 +90,46 @@ describe('exercise helpers', () => {
 
     expect(response.exerciseId).toBe(exercise.id);
     expect(exportLocalData().exerciseResponses).toHaveLength(1);
+  });
+});
+
+describe('recommended answers', () => {
+  const exerciseSectionKeys = ['requirements', 'entityModel', 'operations', 'validation', 'edgeCases', 'tradeoffs'];
+  const designSectionKeys = [
+    'functionalRequirements',
+    'nonFunctionalRequirements',
+    'coreEntities',
+    'apiOperations',
+    'dataFlow',
+    'bottlenecks',
+    'tradeoffs',
+  ];
+
+  it('keeps every exercise supplied with complete recommended answer sections', () => {
+    for (const exercise of exercises) {
+      expect(exercise.recommendedAnswer.overview.length).toBeGreaterThan(0);
+      expect(exercise.recommendedAnswer.checklistNotes.length).toBeGreaterThan(0);
+      for (const key of exerciseSectionKeys) {
+        expect(exercise.recommendedAnswer.sections[key as keyof typeof exercise.recommendedAnswer.sections].length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('keeps every design challenge supplied with complete recommended answer sections', () => {
+    for (const challenge of challenges) {
+      expect(challenge.recommendedAnswer.overview.length).toBeGreaterThan(0);
+      for (const key of designSectionKeys) {
+        expect(challenge.recommendedAnswer.sections[key as keyof typeof challenge.recommendedAnswer.sections].length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('resolves recommended answer content for every mock interview prompt type', () => {
+    const prompt = createMockInterviewPrompt();
+
+    expect(prompt.javascriptQuestion.explanation.length).toBeGreaterThan(0);
+    expect(prompt.crudExercise.recommendedAnswer.overview.length).toBeGreaterThan(0);
+    expect(prompt.designChallenge.recommendedAnswer.overview.length).toBeGreaterThan(0);
   });
 });
 

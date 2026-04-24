@@ -1,6 +1,25 @@
 export type LearningCategory = 'JavaScript' | 'CRUD' | 'Implementation' | 'System Design';
 export type Difficulty = 'Starter' | 'Core' | 'Stretch';
 
+export type ExerciseAnswerSections = {
+  requirements: string;
+  entityModel: string;
+  operations: string;
+  validation: string;
+  edgeCases: string;
+  tradeoffs: string;
+};
+
+export type DesignAnswerSections = {
+  functionalRequirements: string;
+  nonFunctionalRequirements: string;
+  coreEntities: string;
+  apiOperations: string;
+  dataFlow: string;
+  bottlenecks: string;
+  tradeoffs: string;
+};
+
 export type Topic = {
   id: string;
   title: string;
@@ -39,6 +58,11 @@ export type Exercise = {
   starterHints: string[];
   expectedConcepts: string[];
   edgeCases: string[];
+  recommendedAnswer: {
+    overview: string;
+    sections: ExerciseAnswerSections;
+    checklistNotes: string[];
+  };
 };
 
 export type Challenge = {
@@ -50,6 +74,10 @@ export type Challenge = {
   prompt: string;
   checklist: string[];
   comparisonPrompt?: string;
+  recommendedAnswer: {
+    overview: string;
+    sections: DesignAnswerSections;
+  };
 };
 
 export const topics: Topic[] = [
@@ -323,6 +351,40 @@ export const quizQuestions: QuizQuestion[] = [
   },
 ];
 
+function exerciseAnswer(title: string, focus: string, operations: string, edgeCases: string): Exercise['recommendedAnswer'] {
+  return {
+    overview: `A strong answer starts by naming the records involved, then walks through ${focus} with validation and user-facing states.`,
+    sections: {
+      requirements: `Users should be able to use ${title} for the core workflow, see the current saved state, and recover gracefully from empty or invalid input.`,
+      entityModel: `Use records with stable IDs, timestamps when useful, and fields that directly support ${focus}. Keep derived values out of storage unless they are expensive or historically important.`,
+      operations,
+      validation: 'Validate required fields before saving, normalize simple values like whitespace or case where appropriate, and show the user what needs to be fixed.',
+      edgeCases,
+      tradeoffs: 'For a local-first app, simple browser storage is enough. For a multi-user app, move persistence and validation behind APIs and think about conflicts, permissions, and versioning.',
+    },
+    checklistNotes: [
+      'Name the entity model before describing UI.',
+      'Walk through create, read, update, and delete paths where relevant.',
+      'Call out validation, empty states, and failure states explicitly.',
+    ],
+  };
+}
+
+function designAnswer(title: string, entities: string, apiOperations: string, bottlenecks: string): Challenge['recommendedAnswer'] {
+  return {
+    overview: `A good beginner design for ${title} starts with requirements, then maps the main records to APIs and data flow before discussing scale.`,
+    sections: {
+      functionalRequirements: 'Users can perform the main product action, read the current state, update or cancel when appropriate, and receive clear feedback.',
+      nonFunctionalRequirements: 'Start with correctness and reliability. Mention latency, availability, abuse prevention, and data durability if the feature becomes public.',
+      coreEntities: entities,
+      apiOperations,
+      dataFlow: 'Client sends a request to an API, the API validates the payload, reads or writes storage, and returns a response the UI can render. Background work can handle slow side effects.',
+      bottlenecks,
+      tradeoffs: 'Keep the first design simple, then explain where caching, queues, indexing, rate limits, or stronger consistency would matter as usage grows.',
+    },
+  };
+}
+
 export const exercises: Exercise[] = [
   {
     id: 'todo-crud',
@@ -334,6 +396,12 @@ export const exercises: Exercise[] = [
     starterHints: ['What fields does a todo need?', 'What happens after deleting the last item?', 'How do you validate blank input?'],
     expectedConcepts: ['Entity model', 'CRUD operations', 'Validation', 'Empty states'],
     edgeCases: ['Blank todo title', 'Duplicate text', 'Deleting an active edit', 'Persisted stale data'],
+    recommendedAnswer: exerciseAnswer(
+      'Todo CRUD',
+      'creating and maintaining todo items',
+      'Create adds a todo with an ID and default status. Read shows active/completed lists. Update edits title or completion. Delete removes one item and updates the empty state.',
+      'Handle blank titles, deleting the item currently being edited, no todos, duplicate-looking todos, and failed persistence.',
+    ),
   },
   {
     id: 'bookmark-manager',
@@ -345,6 +413,12 @@ export const exercises: Exercise[] = [
     starterHints: ['What makes a URL valid?', 'How are tags stored?', 'What should search inspect?'],
     expectedConcepts: ['Form validation', 'Filtering', 'Many-to-many thinking', 'Update flow'],
     edgeCases: ['Invalid URL', 'Duplicate bookmark', 'Empty tag list', 'Case-insensitive search'],
+    recommendedAnswer: exerciseAnswer(
+      'Bookmark Manager',
+      'saving links with tags and search',
+      'Create validates URL/title/tags. Read shows all bookmarks and filtered results. Update edits metadata. Delete removes one bookmark and recalculates visible results.',
+      'Handle invalid URLs, duplicate URLs, empty search results, tag casing, and editing a bookmark while filters are active.',
+    ),
   },
   {
     id: 'flashcard-deck',
@@ -356,6 +430,12 @@ export const exercises: Exercise[] = [
     starterHints: ['Separate deck from cards.', 'Track review results.', 'Decide what can be derived.'],
     expectedConcepts: ['Related entities', 'Derived state', 'Progress tracking', 'Review history'],
     edgeCases: ['Deck with no cards', 'Deleting a deck', 'Repeated incorrect answers', 'Resetting progress'],
+    recommendedAnswer: exerciseAnswer(
+      'Flashcard Deck',
+      'decks, cards, and review progress',
+      'Create decks and cards separately. Read deck detail and review queue. Update cards or review status. Delete cards or whole decks while cleaning up related progress.',
+      'Handle empty decks, deleting a deck with cards, repeated incorrect reviews, stale review history, and reset behavior.',
+    ),
   },
   {
     id: 'quiz-attempt-history',
@@ -367,6 +447,12 @@ export const exercises: Exercise[] = [
     starterHints: ['What belongs on an attempt?', 'Which stats are derived?', 'Can attempts be deleted?'],
     expectedConcepts: ['Append-only history', 'Dashboard summaries', 'Delete behavior', 'Filtering'],
     edgeCases: ['No attempts', 'Partial answer set', 'Old question versions', 'Reset all progress'],
+    recommendedAnswer: exerciseAnswer(
+      'Quiz Attempt History',
+      'storing attempts and deriving progress stats',
+      'Create an attempt after submit. Read history and summaries. Update is usually avoided for historical attempts. Delete can remove one attempt or reset all attempts.',
+      'Handle no attempts, partial answers, changed quiz questions, repeated attempts, and reset confirmation.',
+    ),
   },
   {
     id: 'shopping-cart',
@@ -378,6 +464,12 @@ export const exercises: Exercise[] = [
     starterHints: ['What is stored: product or cart item?', 'How do totals update?', 'What quantity values are allowed?'],
     expectedConcepts: ['State shape', 'Derived totals', 'Validation', 'Optimistic updates'],
     edgeCases: ['Quantity zero', 'Product unavailable', 'Price changed', 'Duplicate add'],
+    recommendedAnswer: exerciseAnswer(
+      'Shopping Cart',
+      'cart items, quantities, and derived totals',
+      'Create adds a cart item or increments quantity. Read shows items and totals. Update changes quantity. Delete removes an item when quantity reaches zero or user removes it.',
+      'Handle duplicate adds, quantity zero, unavailable products, changed prices, and totals recalculating after every change.',
+    ),
   },
   {
     id: 'comment-thread',
@@ -389,6 +481,12 @@ export const exercises: Exercise[] = [
     starterHints: ['How does a reply reference a parent?', 'What does delete mean with replies?', 'How should sorting work?'],
     expectedConcepts: ['Tree data', 'Parent IDs', 'Soft delete', 'Sorting'],
     edgeCases: ['Deleted parent', 'Deep replies', 'Edited timestamps', 'Large thread rendering'],
+    recommendedAnswer: exerciseAnswer(
+      'Comment Thread',
+      'comments, replies, and threaded rendering',
+      'Create top-level comments or replies with parent IDs. Read builds a tree or nested list. Update edits body/timestamps. Delete may soft-delete to preserve replies.',
+      'Handle deleted parents, deep nesting, sorting, editing history, and rendering large threads without confusing the user.',
+    ),
   },
   {
     id: 'user-preferences',
@@ -400,6 +498,12 @@ export const exercises: Exercise[] = [
     starterHints: ['Which preferences need defaults?', 'What happens with unknown imported keys?', 'How do you validate values?'],
     expectedConcepts: ['Defaults', 'Validation', 'Persistence', 'Import/export'],
     edgeCases: ['Missing settings', 'Invalid imported data', 'Reset confirmation', 'Versioned preferences'],
+    recommendedAnswer: exerciseAnswer(
+      'User Preferences',
+      'defaults, updates, reset, and import/export',
+      'Create starts from defaults. Read loads current preferences. Update validates each setting. Delete is usually reset-to-default rather than removing the whole object.',
+      'Handle missing settings, invalid imported values, unknown future keys, reset confirmation, and versioned preference files.',
+    ),
   },
   {
     id: 'search-filter-list',
@@ -411,6 +515,12 @@ export const exercises: Exercise[] = [
     starterHints: ['Which state is source data?', 'Which state is derived?', 'What order should filter/sort/page run?'],
     expectedConcepts: ['Array methods', 'Derived state', 'Pagination', 'Stable sorting'],
     edgeCases: ['Empty query', 'No results', 'Case sensitivity', 'Last page after filtering'],
+    recommendedAnswer: exerciseAnswer(
+      'Search and Filter List',
+      'source data plus derived filtered views',
+      'Read starts from the full source list. Update query/filter/sort/page state. Derived results apply filter, then sort, then paginate. There may be no create/delete path in this focused exercise.',
+      'Handle empty queries, no results, case sensitivity, stable sorting, and current page becoming invalid after filtering.',
+    ),
   },
   {
     id: 'undo-delete',
@@ -422,6 +532,12 @@ export const exercises: Exercise[] = [
     starterHints: ['Is the record deleted immediately?', 'Where is pending deletion stored?', 'What if the user navigates away?'],
     expectedConcepts: ['Soft delete', 'Timers', 'Pending state', 'User feedback'],
     edgeCases: ['Multiple deletes', 'Undo after timeout', 'Page refresh', 'Delete failure'],
+    recommendedAnswer: exerciseAnswer(
+      'Undo Delete',
+      'pending deletion and recovery',
+      'Create a pending-delete record or state entry. Read hides or marks the item. Update restores it on undo. Delete permanently after timeout or confirmation.',
+      'Handle multiple pending deletes, undo after timeout, page refresh, failed permanent delete, and clear feedback while the undo window is open.',
+    ),
   },
   {
     id: 'import-export',
@@ -433,6 +549,12 @@ export const exercises: Exercise[] = [
     starterHints: ['What is the file shape?', 'How do you validate imported JSON?', 'Should import merge or replace?'],
     expectedConcepts: ['Serialization', 'Validation', 'Migration', 'Conflict handling'],
     edgeCases: ['Invalid JSON', 'Unknown version', 'Duplicate IDs', 'Partial import'],
+    recommendedAnswer: exerciseAnswer(
+      'Import and Export Saved Data',
+      'serializing local app data safely',
+      'Create an export file from current local data. Read and validate imported JSON. Update local data by replacing or merging. Delete is not direct, but reset may clear existing data first.',
+      'Handle invalid JSON, unsupported versions, duplicate IDs, partial imports, and whether import should replace or merge existing data.',
+    ),
   },
 ];
 
@@ -446,6 +568,12 @@ export const challenges: Challenge[] = [
     prompt: 'Sketch a beginner system design for a service that turns long URLs into short links.',
     checklist: ['Functional requirements', 'Core entities', 'API ideas', 'Read path', 'Write path', 'Rate limiting'],
     comparisonPrompt: 'How would this differ from storing links in this local-only browser app?',
+    recommendedAnswer: designAnswer(
+      'URL Shortener System',
+      'User, LongUrl, ShortCode, ClickEvent, and optional AbuseReport.',
+      'POST /links creates a short code, GET /:code redirects, GET /links lists owned links, DELETE /links/:id disables a link.',
+      'Hot links can create heavy read traffic, random code collisions need handling, and abusive links need rate limiting or moderation.',
+    ),
   },
   {
     id: 'notes-service',
@@ -456,6 +584,12 @@ export const challenges: Challenge[] = [
     prompt: 'Turn the local notes feature into a multi-user notes service.',
     checklist: ['Auth', 'Note ownership', 'CRUD APIs', 'Search', 'Sync behavior', 'Access control'],
     comparisonPrompt: 'What must move from localStorage to a server, and what can stay client-side?',
+    recommendedAnswer: designAnswer(
+      'Notes App as a Service',
+      'User, Note, Notebook or Tag, Permission, and AuditEvent.',
+      'POST /notes creates, GET /notes lists, GET /notes/:id reads, PATCH /notes/:id updates, DELETE /notes/:id deletes or archives.',
+      'Search can become slow without indexes, permission checks must happen on every request, and concurrent edits need a conflict strategy.',
+    ),
   },
   {
     id: 'quiz-platform',
@@ -466,6 +600,12 @@ export const challenges: Challenge[] = [
     prompt: 'Design a platform where users take quizzes and review attempt history.',
     checklist: ['Question storage', 'Attempt storage', 'Scoring', 'Analytics', 'Versioning', 'Abuse cases'],
     comparisonPrompt: 'What changes when quiz content is edited after attempts already exist?',
+    recommendedAnswer: designAnswer(
+      'Quiz Platform',
+      'User, Quiz, Question, QuestionVersion, QuizAttempt, Answer, and ScoreSummary.',
+      'GET /quizzes reads content, POST /attempts submits answers, GET /attempts shows history, GET /analytics derives performance.',
+      'Attempt history needs question versioning, scoring must be consistent, analytics can be precomputed, and public quizzes may need abuse prevention.',
+    ),
   },
   {
     id: 'flashcard-review-system',
@@ -476,6 +616,12 @@ export const challenges: Challenge[] = [
     prompt: 'Design a spaced repetition system for flashcards.',
     checklist: ['Decks and cards', 'Review scheduling', 'Attempt history', 'Read/write paths', 'Background jobs'],
     comparisonPrompt: 'Which parts can be computed on the client, and which need server storage?',
+    recommendedAnswer: designAnswer(
+      'Flashcard Review System',
+      'User, Deck, Card, ReviewAttempt, ReviewSchedule, and DailyQueue.',
+      'POST /cards creates cards, POST /reviews records results, GET /queue returns due cards, PATCH /cards/:id edits content.',
+      'Scheduling can be expensive for large decks, queues need consistent due dates, and background jobs can prepare daily review sets.',
+    ),
   },
   {
     id: 'notification-system',
@@ -486,6 +632,12 @@ export const challenges: Challenge[] = [
     prompt: 'Design a basic system for sending email or in-app notifications after an event happens.',
     checklist: ['Trigger events', 'Storage', 'Async processing', 'Retries', 'Failures', 'User preferences'],
     comparisonPrompt: 'Why is async processing useful compared with sending during the original request?',
+    recommendedAnswer: designAnswer(
+      'Notification System',
+      'User, NotificationPreference, Event, Notification, DeliveryAttempt, and Template.',
+      'POST /events records a trigger, workers create notifications, GET /notifications lists in-app items, PATCH /notifications/:id marks read.',
+      'Email providers can fail, retries can duplicate messages, user preferences must be checked, and queues protect the main request path.',
+    ),
   },
   {
     id: 'file-metadata-service',
@@ -496,6 +648,12 @@ export const challenges: Challenge[] = [
     prompt: 'Design metadata tracking for uploaded files without focusing on raw file storage.',
     checklist: ['Metadata model', 'Upload flow', 'Permissions', 'Virus scan state', 'Background jobs'],
     comparisonPrompt: 'What statuses would the UI need while upload and scanning are happening?',
+    recommendedAnswer: designAnswer(
+      'File Upload Metadata Service',
+      'User, FileMetadata, UploadSession, ScanResult, Permission, and StoragePointer.',
+      'POST /uploads starts an upload, PATCH /files/:id updates metadata, GET /files lists files, workers update scan status.',
+      'Large uploads need resumability, scan jobs are async, permissions matter on every read, and metadata/search indexes can lag.',
+    ),
   },
   {
     id: 'event-rsvp-system',
@@ -506,5 +664,11 @@ export const challenges: Challenge[] = [
     prompt: 'Design events, invites, RSVP status, capacity, and waitlists.',
     checklist: ['Entities', 'Capacity rules', 'Status changes', 'Race conditions', 'Notifications'],
     comparisonPrompt: 'What race conditions appear when many people RSVP at the same time?',
+    recommendedAnswer: designAnswer(
+      'Event RSVP System',
+      'User, Event, Invitation, RSVP, WaitlistEntry, and Notification.',
+      'POST /events creates events, POST /rsvps changes status, GET /events/:id shows capacity, workers send reminders or waitlist updates.',
+      'Capacity updates can race, waitlist promotion needs ordering, cancellations must free seats, and notifications should not block RSVP writes.',
+    ),
   },
 ];

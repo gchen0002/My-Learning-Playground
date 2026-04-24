@@ -12,6 +12,7 @@ The app is intentionally small: it runs in the browser, saves progress to `local
 - Exercise prompts with filters, structured answer templates, and checklist scoring.
 - Design Mode prompts for requirements, entities, APIs, data flow, bottlenecks, and tradeoffs.
 - Mock Interview mode with one JavaScript question, one CRUD prompt, and one system design prompt.
+- Optional recommended answers for exercises, design prompts, and mock interviews.
 - Notes, progress tracking, import/export, and a dashboard.
 - A simple gray-first interface with light and dark mode.
 

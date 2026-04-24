@@ -1,4 +1,13 @@
-import { challenges, exercises, quizQuestions, type Difficulty, type LearningCategory, type QuizQuestion } from './content';
+import {
+  challenges,
+  exercises,
+  quizQuestions,
+  type DesignAnswerSections,
+  type Difficulty,
+  type ExerciseAnswerSections,
+  type LearningCategory,
+  type QuizQuestion,
+} from './content';
 import { createId, readJson, removeJson, storageKeys, writeJson } from './storage';
 
 export type ProgressStatus = 'not_started' | 'in_progress' | 'completed';
@@ -26,28 +35,13 @@ export type ChecklistResult = Record<string, boolean>;
 export type ExerciseResponse = {
   id: string;
   exerciseId: string;
-  sections: {
-    requirements: string;
-    entityModel: string;
-    operations: string;
-    validation: string;
-    edgeCases: string;
-    tradeoffs: string;
-  };
+  sections: ExerciseAnswerSections;
   checklist: ChecklistResult;
   createdAt: string;
   updatedAt: string;
 };
 
-export type DesignResponseSections = {
-  functionalRequirements: string;
-  nonFunctionalRequirements: string;
-  coreEntities: string;
-  apiOperations: string;
-  dataFlow: string;
-  bottlenecks: string;
-  tradeoffs: string;
-};
+export type DesignResponseSections = DesignAnswerSections;
 
 export type MockInterviewAttempt = {
   id: string;

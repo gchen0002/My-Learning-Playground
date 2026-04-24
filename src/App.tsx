@@ -13,7 +13,18 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
-import { challenges, exercises, quizQuestions, topics, type Challenge, type Difficulty, type Exercise, type LearningCategory } from './content';
+import {
+  challenges,
+  exercises,
+  quizQuestions,
+  topics,
+  type Challenge,
+  type DesignAnswerSections,
+  type Difficulty,
+  type Exercise,
+  type ExerciseAnswerSections,
+  type LearningCategory,
+} from './content';
 import {
   createMockInterviewPrompt,
   deleteExerciseResponse,
@@ -121,9 +132,12 @@ export function App() {
   const [noteDraft, setNoteDraft] = useState('');
   const [exerciseSections, setExerciseSections] = useState(emptyExerciseSections);
   const [exerciseChecklist, setExerciseChecklist] = useState<ChecklistResult>({});
+  const [showExerciseAnswer, setShowExerciseAnswer] = useState(false);
   const [designSections, setDesignSections] = useState(emptyDesignSections);
+  const [showDesignAnswer, setShowDesignAnswer] = useState(false);
   const [mockPrompt, setMockPrompt] = useState(() => createMockInterviewPrompt());
   const [mockNotes, setMockNotes] = useState('');
+  const [showMockAnswers, setShowMockAnswers] = useState(false);
   const [importMessage, setImportMessage] = useState('');
 
   const activeTopic = topics.find((topic) => topic.id === activeTopicId) ?? topics[0];
@@ -203,6 +217,7 @@ export function App() {
     setActiveExerciseId(id);
     setExerciseSections(response?.sections ?? emptyExerciseSections);
     setExerciseChecklist(response?.checklist ?? {});
+    setShowExerciseAnswer(false);
   }
 
   function handleLaunchExercise(id: string) {
@@ -214,7 +229,13 @@ export function App() {
 
   function handleLaunchChallenge(id: string) {
     setActiveChallengeId(id);
+    setShowDesignAnswer(false);
     setActiveView('design');
+  }
+
+  function handleSelectChallenge(id: string) {
+    setActiveChallengeId(id);
+    setShowDesignAnswer(false);
   }
 
   function handleSaveExerciseResponse() {
@@ -244,7 +265,13 @@ export function App() {
     setMockAttempts(getMockInterviewAttempts());
     setMockNotes('');
     setMockPrompt(createMockInterviewPrompt());
+    setShowMockAnswers(false);
     return attempt;
+  }
+
+  function handleNewMockPrompt() {
+    setMockPrompt(createMockInterviewPrompt());
+    setShowMockAnswers(false);
   }
 
   function handleExport() {
@@ -280,8 +307,11 @@ export function App() {
     setNoteDraft('');
     setExerciseSections(emptyExerciseSections);
     setExerciseChecklist({});
+    setShowExerciseAnswer(false);
     setDesignSections(emptyDesignSections);
+    setShowDesignAnswer(false);
     setMockNotes('');
+    setShowMockAnswers(false);
     setImportMessage('');
   }
 
@@ -542,7 +572,17 @@ export function App() {
                     Delete saved response
                   </button>
                 )}
+                <button className="secondary-button" onClick={() => setShowExerciseAnswer(!showExerciseAnswer)} type="button">
+                  {showExerciseAnswer ? 'Hide recommended answer' : 'Show recommended answer'}
+                </button>
               </div>
+              {showExerciseAnswer && (
+                <RecommendedExerciseAnswer
+                  checklistNotes={activeExercise.recommendedAnswer.checklistNotes}
+                  overview={activeExercise.recommendedAnswer.overview}
+                  sections={activeExercise.recommendedAnswer.sections}
+                />
+              )}
             </article>
           </section>
         )}
@@ -554,7 +594,7 @@ export function App() {
                 <button
                   className={activeChallenge.id === challenge.id ? 'list-card active' : 'list-card'}
                   key={challenge.id}
-                  onClick={() => setActiveChallengeId(challenge.id)}
+                  onClick={() => handleSelectChallenge(challenge.id)}
                   type="button"
                 >
                   <span>{challenge.type} / {challenge.difficulty}</span>
@@ -583,6 +623,15 @@ export function App() {
                 <Save aria-hidden="true" size={18} />
                 Save design response
               </button>
+              <button className="secondary-button answer-toggle" onClick={() => setShowDesignAnswer(!showDesignAnswer)} type="button">
+                {showDesignAnswer ? 'Hide recommended answer' : 'Show recommended answer'}
+              </button>
+              {showDesignAnswer && (
+                <RecommendedDesignAnswer
+                  overview={activeChallenge.recommendedAnswer.overview}
+                  sections={activeChallenge.recommendedAnswer.sections}
+                />
+              )}
             </article>
           </section>
         )}
@@ -612,10 +661,35 @@ export function App() {
                 <Save aria-hidden="true" size={18} />
                 Save mock attempt
               </button>
-              <button className="secondary-button" onClick={() => setMockPrompt(createMockInterviewPrompt())} type="button">
+              <button className="secondary-button" onClick={handleNewMockPrompt} type="button">
                 New prompt set
               </button>
+              <button className="secondary-button" onClick={() => setShowMockAnswers(!showMockAnswers)} type="button">
+                {showMockAnswers ? 'Hide recommended answers' : 'Show recommended answers'}
+              </button>
             </div>
+            {showMockAnswers && (
+              <section className="recommended-panel">
+                <p className="section-label">Recommended answers</p>
+                <div className="mock-grid">
+                  <PromptCard
+                    body={`${mockPrompt.javascriptQuestion.answer}. ${mockPrompt.javascriptQuestion.explanation}`}
+                    meta="JavaScript"
+                    title="Concept answer"
+                  />
+                  <PromptCard
+                    body={mockPrompt.crudExercise.recommendedAnswer.overview}
+                    meta={mockPrompt.crudExercise.difficulty}
+                    title={mockPrompt.crudExercise.title}
+                  />
+                  <PromptCard
+                    body={mockPrompt.designChallenge.recommendedAnswer.overview}
+                    meta={mockPrompt.designChallenge.difficulty}
+                    title={mockPrompt.designChallenge.title}
+                  />
+                </div>
+              </section>
+            )}
           </section>
         )}
 
@@ -748,6 +822,55 @@ function RelatedPractice({
         </div>
       )}
     </section>
+  );
+}
+
+function RecommendedExerciseAnswer({
+  checklistNotes,
+  overview,
+  sections,
+}: {
+  checklistNotes: string[];
+  overview: string;
+  sections: ExerciseAnswerSections;
+}) {
+  return (
+    <section className="recommended-panel">
+      <p className="section-label">Recommended answer</p>
+      <p>{overview}</p>
+      <AnswerSections sections={sections} />
+      <div className="mini-panel">
+        <strong>Checklist notes</strong>
+        <ul>
+          {checklistNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function RecommendedDesignAnswer({ overview, sections }: { overview: string; sections: DesignAnswerSections }) {
+  return (
+    <section className="recommended-panel">
+      <p className="section-label">Recommended answer</p>
+      <p>{overview}</p>
+      <AnswerSections sections={sections} />
+    </section>
+  );
+}
+
+function AnswerSections({ sections }: { sections: ExerciseAnswerSections | DesignAnswerSections }) {
+  return (
+    <div className="answer-section-grid">
+      {Object.entries(sections).map(([label, value]) => (
+        <article className="answer-section" key={label}>
+          <strong>{label.replace(/([A-Z])/g, ' $1')}</strong>
+          <p>{value}</p>
+        </article>
+      ))}
+    </div>
   );
 }
 

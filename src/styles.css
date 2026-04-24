@@ -340,6 +340,43 @@ h3 {
   border-radius: 8px;
 }
 
+.recommended-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--line));
+  border-radius: 8px;
+}
+
+.answer-toggle {
+  margin-top: 12px;
+}
+
+.answer-section-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.answer-section {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 72%, var(--bg));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.answer-section strong {
+  color: var(--green-dark);
+  text-transform: capitalize;
+}
+
+.answer-section p {
+  margin: 0;
+}
+
 .related-practice h4 {
   margin: 0;
   font-size: 1rem;

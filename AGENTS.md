@@ -38,6 +38,7 @@ npm run test
 - Avoid adding routing, auth, databases, or heavy frameworks until there is a concrete need.
 - Make the learning flow more useful before making the UI more decorative.
 - Keep copy plain and beginner-friendly.
+- Treat recommended answers as example answers for comparison, not as the only correct response.
 
 ## Suggested Next Work
 
