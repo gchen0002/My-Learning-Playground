@@ -65,7 +65,8 @@ body {
 
 button,
 textarea,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -375,6 +376,58 @@ h3 {
 
 .answer-section p {
   margin: 0;
+}
+
+.code-block,
+.code-textarea {
+  font-family:
+    "Cascadia Code",
+    "Consolas",
+    monospace;
+}
+
+.code-block {
+  overflow: auto;
+  margin: 0;
+  padding: 14px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-strong) 78%, var(--bg));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+.drill-meta-row,
+.drill-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.drill-meta-row {
+  margin: 12px 0 18px;
+}
+
+.drill-meta-row span {
+  padding: 7px 10px;
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--blue) 22%, var(--line));
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.drill-controls label {
+  display: grid;
+  gap: 7px;
+}
+
+.drill-controls .check-row {
+  display: flex;
+  min-height: 44px;
+  padding-top: 22px;
 }
 
 .related-practice h4 {

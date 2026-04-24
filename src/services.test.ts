@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { challenges, exercises, quizQuestions, topics } from './content';
+import { challenges, codeDrills, exercises, quizQuestions, topics } from './content';
 import {
   createMockInterviewPrompt,
+  deleteDrillAttempt,
   exportLocalData,
+  filterDrills,
   filterExercises,
   getChallengesForTopic,
   getChecklistScore,
+  getDrillAttempts,
+  getDrillsForTopic,
   getExercisesForTopic,
   getNotes,
   getProgress,
   getQuestionsForTopic,
   importLocalData,
+  saveDrillAttempt,
   saveExerciseResponse,
   saveNote,
   scoreQuiz,
@@ -133,17 +138,67 @@ describe('recommended answers', () => {
   });
 });
 
+describe('code drills', () => {
+  it('keeps every drill supplied with complete practice content', () => {
+    for (const drill of codeDrills) {
+      expect(drill.prompt.length).toBeGreaterThan(0);
+      expect(drill.starterCode.length).toBeGreaterThan(0);
+      expect(drill.testCases.length).toBeGreaterThan(0);
+      expect(drill.hints.length).toBeGreaterThan(0);
+      expect(drill.recommendedSolution.length).toBeGreaterThan(0);
+      expect(drill.explanation.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('finds related drills by topic and filters by difficulty', () => {
+    expect(getDrillsForTopic('arrays-objects').map((drill) => drill.id)).toContain('map-usernames');
+    expect(filterDrills('async-promises', 'Core').map((drill) => drill.id)).toContain('promise-sequence');
+  });
+
+  it('saves, updates, reloads, and deletes drill attempts', () => {
+    const drill = codeDrills[0];
+    const firstAttempt = saveDrillAttempt({
+      drillId: drill.id,
+      code: 'first solution',
+      notes: 'first notes',
+      confidence: 'Low',
+      completed: false,
+    });
+
+    const updatedAttempt = saveDrillAttempt({
+      drillId: drill.id,
+      code: 'better solution',
+      notes: 'updated notes',
+      confidence: 'High',
+      completed: true,
+    });
+
+    expect(updatedAttempt.id).toBe(firstAttempt.id);
+    expect(getDrillAttempts()).toHaveLength(1);
+    expect(getDrillAttempts()[0]?.code).toBe('better solution');
+    expect(exportLocalData().drillAttempts).toHaveLength(1);
+
+    deleteDrillAttempt(updatedAttempt.id);
+
+    expect(getDrillAttempts()).toHaveLength(0);
+  });
+});
+
 describe('topic relationship helpers', () => {
   it('finds related quiz questions, exercises, and challenges', () => {
     expect(getQuestionsForTopic('crud-flow').map((question) => question.id)).toContain('q-crud-1');
     expect(getExercisesForTopic('crud-flow').map((exercise) => exercise.id)).toContain('todo-crud');
     expect(getChallengesForTopic('requirements').map((challenge) => challenge.id)).toContain('url-shortener');
+    expect(getDrillsForTopic('arrays-objects').map((drill) => drill.id)).toContain('dedupe-values');
   });
 
   it('keeps every topic connected to learning detail and practice', () => {
     for (const topic of topics) {
       const relatedPracticeCount =
-        getQuestionsForTopic(topic.id).length + getExercisesForTopic(topic.id).length + getChallengesForTopic(topic.id).length;
+        getQuestionsForTopic(topic.id).length +
+        getDrillsForTopic(topic.id).length +
+        getExercisesForTopic(topic.id).length +
+        getChallengesForTopic(topic.id).length;
 
       expect(topic.basicExplanation.length).toBeGreaterThan(0);
       expect(topic.deepDive.length).toBeGreaterThan(0);

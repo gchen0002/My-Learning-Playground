@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import {
   challenges,
+  codeDrills,
   exercises,
   quizQuestions,
   topics,
   type Challenge,
+  type CodeDrill,
   type DesignAnswerSections,
   type Difficulty,
   type Exercise,
@@ -27,11 +29,15 @@ import {
 } from './content';
 import {
   createMockInterviewPrompt,
+  deleteDrillAttempt,
   deleteExerciseResponse,
   deleteNote,
   exportLocalData,
+  filterDrills,
   filterExercises,
   getChallengesForTopic,
+  getDrillAttempts,
+  getDrillsForTopic,
   getChecklistScore,
   getExercisesForTopic,
   getExerciseResponses,
@@ -43,12 +49,14 @@ import {
   importLocalData,
   resetLocalProgress,
   saveExerciseResponse,
+  saveDrillAttempt,
   saveMockInterviewAttempt,
   saveNote,
   setProgress,
   submitQuizAttempt,
   type ChecklistResult,
   type DesignResponseSections,
+  type DrillAttempt,
   type ExerciseResponse,
   type LocalDataExport,
   type MockInterviewAttempt,
@@ -58,11 +66,12 @@ import {
   type QuizAttempt,
 } from './services';
 
-type View = 'learn' | 'quiz' | 'exercises' | 'design' | 'mock' | 'progress';
+type View = 'learn' | 'quiz' | 'drills' | 'exercises' | 'design' | 'mock' | 'progress';
 
 const views: { id: View; label: string }[] = [
   { id: 'learn', label: 'Learn' },
   { id: 'quiz', label: 'Quiz' },
+  { id: 'drills', label: 'Code Drills' },
   { id: 'exercises', label: 'Exercises' },
   { id: 'design', label: 'Design Mode' },
   { id: 'mock', label: 'Mock Interview' },
@@ -92,6 +101,20 @@ const emptyDesignSections: DesignResponseSections = {
   tradeoffs: '',
 };
 
+const emptyDrillAttempt = {
+  code: '',
+  notes: '',
+  confidence: 'Medium' as DrillAttempt['confidence'],
+  completed: false,
+};
+
+function getEmptyDrillDraft(drill: CodeDrill = codeDrills[0]) {
+  return {
+    ...emptyDrillAttempt,
+    code: drill.starterCode,
+  };
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -107,6 +130,7 @@ function refreshLocalState() {
     progress: getProgress(),
     attempts: getQuizAttempts(),
     exerciseResponses: getExerciseResponses(),
+    drillAttempts: getDrillAttempts(),
     mockAttempts: getMockInterviewAttempts(),
   };
 }
@@ -117,14 +141,18 @@ export function App() {
   });
   const [activeView, setActiveView] = useState<View>('learn');
   const [activeTopicId, setActiveTopicId] = useState(topics[0].id);
+  const [activeDrillId, setActiveDrillId] = useState(codeDrills[0].id);
   const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
   const [activeChallengeId, setActiveChallengeId] = useState(challenges[0].id);
   const [categoryFilter, setCategoryFilter] = useState<LearningCategory | 'All'>('All');
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | 'All'>('All');
+  const [drillTopicFilter, setDrillTopicFilter] = useState<string | 'All'>('All');
+  const [drillDifficultyFilter, setDrillDifficultyFilter] = useState<Difficulty | 'All'>('All');
   const [progress, setProgressState] = useState<ProgressMap>(() => getProgress());
   const [notes, setNotes] = useState<Note[]>(() => getNotes());
   const [attempts, setAttempts] = useState<QuizAttempt[]>(() => getQuizAttempts());
   const [exerciseResponses, setExerciseResponses] = useState<ExerciseResponse[]>(() => getExerciseResponses());
+  const [drillAttempts, setDrillAttempts] = useState<DrillAttempt[]>(() => getDrillAttempts());
   const [mockAttempts, setMockAttempts] = useState<MockInterviewAttempt[]>(() => getMockInterviewAttempts());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [latestAttempt, setLatestAttempt] = useState<QuizAttempt | null>(null);
@@ -133,6 +161,8 @@ export function App() {
   const [exerciseSections, setExerciseSections] = useState(emptyExerciseSections);
   const [exerciseChecklist, setExerciseChecklist] = useState<ChecklistResult>({});
   const [showExerciseAnswer, setShowExerciseAnswer] = useState(false);
+  const [drillDraft, setDrillDraft] = useState(() => getEmptyDrillDraft());
+  const [showDrillSolution, setShowDrillSolution] = useState(false);
   const [designSections, setDesignSections] = useState(emptyDesignSections);
   const [showDesignAnswer, setShowDesignAnswer] = useState(false);
   const [mockPrompt, setMockPrompt] = useState(() => createMockInterviewPrompt());
@@ -141,16 +171,20 @@ export function App() {
   const [importMessage, setImportMessage] = useState('');
 
   const activeTopic = topics.find((topic) => topic.id === activeTopicId) ?? topics[0];
+  const activeDrill = codeDrills.find((drill) => drill.id === activeDrillId) ?? codeDrills[0];
   const activeExercise = exercises.find((exercise) => exercise.id === activeExerciseId) ?? exercises[0];
   const activeChallenge = challenges.find((challenge) => challenge.id === activeChallengeId) ?? challenges[0];
   const filteredExercises = useMemo(() => filterExercises(categoryFilter, difficultyFilter), [categoryFilter, difficultyFilter]);
+  const filteredDrills = useMemo(() => filterDrills(drillTopicFilter, drillDifficultyFilter), [drillTopicFilter, drillDifficultyFilter]);
   const completedCount = topics.filter((topic) => progress[topic.id] === 'completed').length;
   const averageScore =
     attempts.length === 0
       ? 0
       : Math.round((attempts.reduce((total, attempt) => total + attempt.score / attempt.total, 0) / attempts.length) * 100);
   const savedExerciseResponse = exerciseResponses.find((response) => response.exerciseId === activeExercise.id);
+  const savedDrillAttempt = drillAttempts.find((attempt) => attempt.drillId === activeDrill.id);
   const activeTopicQuestions = getQuestionsForTopic(activeTopic.id);
+  const activeTopicDrills = getDrillsForTopic(activeTopic.id);
   const activeTopicExercises = getExercisesForTopic(activeTopic.id);
   const activeTopicChallenges = getChallengesForTopic(activeTopic.id);
   const quizQuestionsToShow = quizTopicId ? getQuestionsForTopic(quizTopicId) : quizQuestions;
@@ -167,6 +201,7 @@ export function App() {
     setProgressState(nextState.progress);
     setAttempts(nextState.attempts);
     setExerciseResponses(nextState.exerciseResponses);
+    setDrillAttempts(nextState.drillAttempts);
     setMockAttempts(nextState.mockAttempts);
   }
 
@@ -210,6 +245,37 @@ export function App() {
     setQuizTopicId(null);
     setQuizAnswers({});
     setLatestAttempt(null);
+  }
+
+  function handleSelectDrill(id: string) {
+    const attempt = drillAttempts.find((item) => item.drillId === id);
+    const drill = codeDrills.find((item) => item.id === id) ?? codeDrills[0];
+    setActiveDrillId(id);
+    setDrillDraft({
+      code: attempt?.code ?? drill.starterCode,
+      notes: attempt?.notes ?? '',
+      confidence: attempt?.confidence ?? 'Medium',
+      completed: attempt?.completed ?? false,
+    });
+    setShowDrillSolution(false);
+  }
+
+  function handleLaunchDrill(id: string) {
+    setDrillTopicFilter('All');
+    setDrillDifficultyFilter('All');
+    handleSelectDrill(id);
+    setActiveView('drills');
+  }
+
+  function handleSaveDrillAttempt() {
+    saveDrillAttempt({
+      drillId: activeDrill.id,
+      code: drillDraft.code,
+      notes: drillDraft.notes,
+      confidence: drillDraft.confidence,
+      completed: drillDraft.completed,
+    });
+    setDrillAttempts(getDrillAttempts());
   }
 
   function handleSelectExercise(id: string) {
@@ -305,6 +371,8 @@ export function App() {
     setQuizAnswers({});
     setLatestAttempt(null);
     setNoteDraft('');
+    setDrillDraft(getEmptyDrillDraft(activeDrill));
+    setShowDrillSolution(false);
     setExerciseSections(emptyExerciseSections);
     setExerciseChecklist({});
     setShowExerciseAnswer(false);
@@ -344,7 +412,7 @@ export function App() {
         <div className="sidebar-summary">
           <span>{completedCount} of {topics.length} lessons complete</span>
           <strong>{exerciseResponses.length} exercise responses</strong>
-          <small>{attempts.length} quiz attempts / {mockAttempts.length} mock interviews</small>
+          <small>{attempts.length} quiz attempts / {drillAttempts.length} drill attempts / {mockAttempts.length} mock interviews</small>
         </div>
       </aside>
 
@@ -441,8 +509,10 @@ export function App() {
               </div>
               <RelatedPractice
                 challenges={activeTopicChallenges}
+                drills={activeTopicDrills}
                 exercises={activeTopicExercises}
                 onOpenChallenge={handleLaunchChallenge}
+                onOpenDrill={handleLaunchDrill}
                 onOpenExercise={handleLaunchExercise}
                 onOpenQuiz={() => handleLaunchTopicQuiz(activeTopic.id)}
                 questionCount={activeTopicQuestions.length}
@@ -506,6 +576,119 @@ export function App() {
               </button>
               {latestAttempt && <strong>{latestAttempt.score}/{latestAttempt.total} correct</strong>}
             </div>
+          </section>
+        )}
+
+        {activeView === 'drills' && (
+          <section className="two-column">
+            <div className="panel-list">
+              <div className="filter-row">
+                <select onChange={(event) => setDrillTopicFilter(event.target.value)} value={drillTopicFilter}>
+                  <option value="All">All topics</option>
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      Topic {topic.order}: {topic.title}
+                    </option>
+                  ))}
+                </select>
+                <select onChange={(event) => setDrillDifficultyFilter(event.target.value as Difficulty | 'All')} value={drillDifficultyFilter}>
+                  <option>All</option>
+                  <option>Starter</option>
+                  <option>Core</option>
+                  <option>Stretch</option>
+                </select>
+              </div>
+              {filteredDrills.map((drill) => (
+                <button
+                  className={activeDrill.id === drill.id ? 'list-card active' : 'list-card'}
+                  key={drill.id}
+                  onClick={() => handleSelectDrill(drill.id)}
+                  type="button"
+                >
+                  <span>Code drill / {drill.difficulty}</span>
+                  <strong>{drill.title}</strong>
+                  <small>{drill.prompt}</small>
+                </button>
+              ))}
+            </div>
+            <article className="detail-panel">
+              <div className="detail-heading">
+                <Code2 aria-hidden="true" size={22} />
+                <div>
+                  <p className="eyebrow">{activeDrill.difficulty} JavaScript drill</p>
+                  <h3>{activeDrill.title}</h3>
+                </div>
+              </div>
+              <p>{activeDrill.prompt}</p>
+              <div className="drill-meta-row">
+                {activeDrill.topicIds.map((topicId) => (
+                  <span key={topicId}>{topics.find((topic) => topic.id === topicId)?.title ?? topicId}</span>
+                ))}
+              </div>
+              <InfoColumns hints={activeDrill.hints} concepts={['Write a solution', 'Trace the test cases', 'Explain the tradeoff']} edgeCases={activeDrill.testCases} />
+              <section className="structured-form">
+                <label>
+                  <span>Your code</span>
+                  <textarea
+                    className="code-textarea"
+                    onChange={(event) => setDrillDraft({ ...drillDraft, code: event.target.value })}
+                    rows={12}
+                    spellCheck={false}
+                    value={drillDraft.code}
+                  />
+                </label>
+                <label>
+                  <span>Notes and explanation</span>
+                  <textarea
+                    onChange={(event) => setDrillDraft({ ...drillDraft, notes: event.target.value })}
+                    placeholder="Explain your approach, time complexity, edge cases, or what felt confusing."
+                    rows={4}
+                    value={drillDraft.notes}
+                  />
+                </label>
+                <div className="drill-controls">
+                  <label>
+                    <span>Confidence</span>
+                    <select
+                      onChange={(event) => setDrillDraft({ ...drillDraft, confidence: event.target.value as DrillAttempt['confidence'] })}
+                      value={drillDraft.confidence}
+                    >
+                      <option>Low</option>
+                      <option>Medium</option>
+                      <option>High</option>
+                    </select>
+                  </label>
+                  <label className="check-row">
+                    <input
+                      checked={drillDraft.completed}
+                      onChange={(event) => setDrillDraft({ ...drillDraft, completed: event.target.checked })}
+                      type="checkbox"
+                    />
+                    <span>Mark completed</span>
+                  </label>
+                </div>
+              </section>
+              <div className="action-row">
+                <button className="primary-button" onClick={handleSaveDrillAttempt} type="button">
+                  <Save aria-hidden="true" size={18} />
+                  Save drill attempt
+                </button>
+                {savedDrillAttempt && (
+                  <button className="text-button" onClick={() => {
+                    deleteDrillAttempt(savedDrillAttempt.id);
+                    setDrillAttempts(getDrillAttempts());
+                    setDrillDraft(getEmptyDrillDraft(activeDrill));
+                  }} type="button">
+                    <Trash2 aria-hidden="true" size={15} />
+                    Delete saved attempt
+                  </button>
+                )}
+                <button className="secondary-button" onClick={() => setShowDrillSolution(!showDrillSolution)} type="button">
+                  {showDrillSolution ? 'Hide recommended solution' : 'Show recommended solution'}
+                </button>
+              </div>
+              {showDrillSolution && <RecommendedDrillSolution drill={activeDrill} />}
+            </article>
           </section>
         )}
 
@@ -697,6 +880,7 @@ export function App() {
           <section className="progress-grid">
             <Metric icon={<ClipboardList aria-hidden="true" size={21} />} label="Lessons complete" value={`${completedCount}/${topics.length}`} />
             <Metric icon={<CheckCircle2 aria-hidden="true" size={21} />} label="Average quiz score" value={`${averageScore}%`} />
+            <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Code drill attempts" value={String(drillAttempts.length)} />
             <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Exercise responses" value={String(exerciseResponses.length)} />
             <Metric icon={<Play aria-hidden="true" size={21} />} label="Mock interviews" value={String(mockAttempts.length)} />
             <HistoryPanel title="Quiz history" empty="No quiz attempts yet.">
@@ -726,6 +910,14 @@ export function App() {
                 <div className="history-row" key={response.id}>
                   <span>{exercises.find((exercise) => exercise.id === response.exerciseId)?.title ?? response.exerciseId}</span>
                   <strong>{getChecklistScore(response.checklist)}%</strong>
+                </div>
+              ))}
+            </HistoryPanel>
+            <HistoryPanel title="Code drill attempts" empty="No code drills saved yet.">
+              {drillAttempts.map((attempt) => (
+                <div className="history-row" key={attempt.id}>
+                  <span>{codeDrills.find((drill) => drill.id === attempt.drillId)?.title ?? attempt.drillId}</span>
+                  <strong>{attempt.completed ? 'Done' : attempt.confidence}</strong>
                 </div>
               ))}
             </HistoryPanel>
@@ -770,20 +962,24 @@ function NoteComposer({ buttonLabel, draft, onChange, onSave }: NoteComposerProp
 
 function RelatedPractice({
   challenges,
+  drills,
   exercises,
   onOpenChallenge,
+  onOpenDrill,
   onOpenExercise,
   onOpenQuiz,
   questionCount,
 }: {
   challenges: Challenge[];
+  drills: CodeDrill[];
   exercises: Exercise[];
   onOpenChallenge: (id: string) => void;
+  onOpenDrill: (id: string) => void;
   onOpenExercise: (id: string) => void;
   onOpenQuiz: () => void;
   questionCount: number;
 }) {
-  if (questionCount === 0 && exercises.length === 0 && challenges.length === 0) {
+  if (questionCount === 0 && drills.length === 0 && exercises.length === 0 && challenges.length === 0) {
     return null;
   }
 
@@ -798,6 +994,17 @@ function RelatedPractice({
           <span>{questionCount} question{questionCount === 1 ? '' : 's'}</span>
           <strong>Start topic quiz</strong>
         </button>
+      )}
+      {drills.length > 0 && (
+        <div className="practice-group">
+          <span>Code drills</span>
+          {drills.map((drill) => (
+            <button className="practice-link" key={drill.id} onClick={() => onOpenDrill(drill.id)} type="button">
+              <span>{drill.difficulty}</span>
+              <strong>{drill.title}</strong>
+            </button>
+          ))}
+        </div>
       )}
       {exercises.length > 0 && (
         <div className="practice-group">
@@ -857,6 +1064,19 @@ function RecommendedDesignAnswer({ overview, sections }: { overview: string; sec
       <p className="section-label">Recommended answer</p>
       <p>{overview}</p>
       <AnswerSections sections={sections} />
+    </section>
+  );
+}
+
+function RecommendedDrillSolution({ drill }: { drill: CodeDrill }) {
+  return (
+    <section className="recommended-panel">
+      <p className="section-label">Recommended solution</p>
+      <p>{drill.explanation}</p>
+      <pre className="code-block">
+        <code>{drill.recommendedSolution}</code>
+      </pre>
+      <MiniList title="Test cases to trace" items={drill.testCases} />
     </section>
   );
 }

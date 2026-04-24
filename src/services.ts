@@ -1,5 +1,6 @@
 import {
   challenges,
+  codeDrills,
   exercises,
   quizQuestions,
   type DesignAnswerSections,
@@ -43,6 +44,17 @@ export type ExerciseResponse = {
 
 export type DesignResponseSections = DesignAnswerSections;
 
+export type DrillAttempt = {
+  id: string;
+  drillId: string;
+  code: string;
+  notes: string;
+  confidence: 'Low' | 'Medium' | 'High';
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MockInterviewAttempt = {
   id: string;
   javascriptQuestionId: string;
@@ -59,6 +71,7 @@ export type LocalDataExport = {
   progress: ProgressMap;
   quizAttempts: QuizAttempt[];
   exerciseResponses: ExerciseResponse[];
+  drillAttempts: DrillAttempt[];
   mockInterviewAttempts: MockInterviewAttempt[];
 };
 
@@ -76,6 +89,10 @@ export function getExercisesForTopic(topicId: string) {
 
 export function getChallengesForTopic(topicId: string) {
   return challenges.filter((challenge) => challenge.topicIds.includes(topicId));
+}
+
+export function getDrillsForTopic(topicId: string) {
+  return codeDrills.filter((drill) => drill.topicIds.includes(topicId));
 }
 
 export function getQuizAttempts() {
@@ -168,6 +185,40 @@ export function filterExercises(category: LearningCategory | 'All', difficulty: 
   });
 }
 
+export function getDrillAttempts() {
+  return readJson<DrillAttempt[]>(storageKeys.drillAttempts, []);
+}
+
+export function saveDrillAttempt(input: Omit<DrillAttempt, 'id' | 'createdAt' | 'updatedAt'>) {
+  const now = new Date().toISOString();
+  const existing = getDrillAttempts().find((attempt) => attempt.drillId === input.drillId);
+  const nextAttempt: DrillAttempt = {
+    ...input,
+    id: existing?.id ?? createId(),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  const nextAttempts = [nextAttempt, ...getDrillAttempts().filter((attempt) => attempt.drillId !== input.drillId)];
+  writeJson(storageKeys.drillAttempts, nextAttempts);
+  return nextAttempt;
+}
+
+export function deleteDrillAttempt(id: string) {
+  writeJson(
+    storageKeys.drillAttempts,
+    getDrillAttempts().filter((attempt) => attempt.id !== id),
+  );
+}
+
+export function filterDrills(topicId: string | 'All', difficulty: Difficulty | 'All') {
+  return codeDrills.filter((drill) => {
+    const topicMatches = topicId === 'All' || drill.topicIds.includes(topicId);
+    const difficultyMatches = difficulty === 'All' || drill.difficulty === difficulty;
+    return topicMatches && difficultyMatches;
+  });
+}
+
 export function getChecklistScore(checklist: ChecklistResult) {
   const values = Object.values(checklist);
   if (values.length === 0) {
@@ -212,6 +263,7 @@ export function exportLocalData(): LocalDataExport {
     progress: getProgress(),
     quizAttempts: getQuizAttempts(),
     exerciseResponses: getExerciseResponses(),
+    drillAttempts: getDrillAttempts(),
     mockInterviewAttempts: getMockInterviewAttempts(),
   };
 }
@@ -225,6 +277,7 @@ export function importLocalData(data: LocalDataExport) {
   writeJson(storageKeys.progress, data.progress ?? {});
   writeJson(storageKeys.quizAttempts, Array.isArray(data.quizAttempts) ? data.quizAttempts : []);
   writeJson(storageKeys.exerciseResponses, Array.isArray(data.exerciseResponses) ? data.exerciseResponses : []);
+  writeJson(storageKeys.drillAttempts, Array.isArray(data.drillAttempts) ? data.drillAttempts : []);
   writeJson(storageKeys.mockInterviewAttempts, Array.isArray(data.mockInterviewAttempts) ? data.mockInterviewAttempts : []);
 }
 
@@ -233,5 +286,6 @@ export function resetLocalProgress() {
   removeJson(storageKeys.progress);
   removeJson(storageKeys.quizAttempts);
   removeJson(storageKeys.exerciseResponses);
+  removeJson(storageKeys.drillAttempts);
   removeJson(storageKeys.mockInterviewAttempts);
 }

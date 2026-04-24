@@ -9,6 +9,7 @@ The app is intentionally small: it runs in the browser, saves progress to `local
 - A topic-based learning path for JavaScript, CRUD, implementation design, and simple system design.
 - Topic-based lessons with broad explanations, deeper breakdowns, mental models, and linked practice.
 - A quiz flow that stores attempts locally.
+- JavaScript code drills with starter code, examples, saved attempts, and recommended solutions.
 - Exercise prompts with filters, structured answer templates, and checklist scoring.
 - Design Mode prompts for requirements, entities, APIs, data flow, bottlenecks, and tradeoffs.
 - Mock Interview mode with one JavaScript question, one CRUD prompt, and one system design prompt.
@@ -84,6 +85,7 @@ The app stores progress, notes, and quiz attempts in your browser under these ke
 - `mlp.progress`
 - `mlp.quizAttempts`
 - `mlp.exerciseResponses`
+- `mlp.drillAttempts`
 - `mlp.mockInterviewAttempts`
 
 Use the reset button in the app header to clear local study data.

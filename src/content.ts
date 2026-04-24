@@ -80,6 +80,19 @@ export type Challenge = {
   };
 };
 
+export type CodeDrill = {
+  id: string;
+  title: string;
+  topicIds: string[];
+  difficulty: Difficulty;
+  prompt: string;
+  starterCode: string;
+  testCases: string[];
+  hints: string[];
+  recommendedSolution: string;
+  explanation: string;
+};
+
 export const topics: Topic[] = [
   {
     id: 'arrays-objects',
@@ -555,6 +568,210 @@ export const exercises: Exercise[] = [
       'Create an export file from current local data. Read and validate imported JSON. Update local data by replacing or merging. Delete is not direct, but reset may clear existing data first.',
       'Handle invalid JSON, unsupported versions, duplicate IDs, partial imports, and whether import should replace or merge existing data.',
     ),
+  },
+];
+
+export const codeDrills: CodeDrill[] = [
+  {
+    id: 'map-usernames',
+    title: 'Map Usernames',
+    topicIds: ['arrays-objects'],
+    difficulty: 'Starter',
+    prompt: 'Write a function that takes an array of user objects and returns an array of usernames.',
+    starterCode: `function getUsernames(users) {
+  // return an array of username values
+}`,
+    testCases: [
+      "getUsernames([{ username: 'grace' }, { username: 'linus' }]) -> ['grace', 'linus']",
+      'getUsernames([]) -> []',
+    ],
+    hints: ['Use map when each input item becomes one output item.', 'Decide what should happen if the input array is empty.'],
+    recommendedSolution: `function getUsernames(users) {
+  return users.map((user) => user.username);
+}`,
+    explanation: 'map is the right fit because the output array has the same length as the input array and each object becomes one string.',
+  },
+  {
+    id: 'count-by-status',
+    title: 'Count by Status',
+    topicIds: ['arrays-objects', 'crud-flow'],
+    difficulty: 'Starter',
+    prompt: 'Write a function that counts how many records exist for each status value.',
+    starterCode: `function countByStatus(items) {
+  // return an object like { active: 2, done: 1 }
+}`,
+    testCases: [
+      "countByStatus([{ status: 'active' }, { status: 'done' }, { status: 'active' }]) -> { active: 2, done: 1 }",
+      'countByStatus([]) -> {}',
+    ],
+    hints: ['Use an object as a lookup table.', 'Initialize missing statuses before incrementing them.'],
+    recommendedSolution: `function countByStatus(items) {
+  return items.reduce((counts, item) => {
+    counts[item.status] = (counts[item.status] ?? 0) + 1;
+    return counts;
+  }, {});
+}`,
+    explanation: 'reduce works well when many input records become one summary object keyed by status.',
+  },
+  {
+    id: 'filter-search-results',
+    title: 'Filter Search Results',
+    topicIds: ['arrays-objects', 'state-validation'],
+    difficulty: 'Core',
+    prompt: 'Write a case-insensitive search function for records with title and description fields.',
+    starterCode: `function searchItems(items, query) {
+  // return matching items
+}`,
+    testCases: [
+      "searchItems([{ title: 'React', description: 'UI' }], 'rea') -> [{ title: 'React', description: 'UI' }]",
+      "searchItems([{ title: 'React', description: 'UI' }], '') -> [{ title: 'React', description: 'UI' }]",
+    ],
+    hints: ['Normalize the query and searchable fields to lowercase.', 'An empty query should usually return the full list.'],
+    recommendedSolution: `function searchItems(items, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return items;
+  }
+
+  return items.filter((item) => {
+    const title = item.title.toLowerCase();
+    const description = item.description.toLowerCase();
+    return title.includes(normalizedQuery) || description.includes(normalizedQuery);
+  });
+}`,
+    explanation: 'Filtering is derived state: keep the original list unchanged, normalize the query, and return a new visible list.',
+  },
+  {
+    id: 'dedupe-values',
+    title: 'Dedupe Values',
+    topicIds: ['arrays-objects'],
+    difficulty: 'Starter',
+    prompt: 'Write a function that removes duplicate primitive values while preserving first-seen order.',
+    starterCode: `function uniqueValues(values) {
+  // return each value once
+}`,
+    testCases: ['uniqueValues([3, 1, 3, 2, 1]) -> [3, 1, 2]', "uniqueValues(['a', 'a', 'b']) -> ['a', 'b']"],
+    hints: ['A Set can track what you have already seen.', 'Preserving order means you should scan from left to right.'],
+    recommendedSolution: `function uniqueValues(values) {
+  const seen = new Set();
+  const result = [];
+
+  for (const value of values) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      result.push(value);
+    }
+  }
+
+  return result;
+}`,
+    explanation: 'The Set gives fast membership checks, while the result array preserves the order of first appearances.',
+  },
+  {
+    id: 'group-by-category',
+    title: 'Group by Category',
+    topicIds: ['arrays-objects', 'data-models'],
+    difficulty: 'Core',
+    prompt: 'Write a function that groups records into arrays by category.',
+    starterCode: `function groupByCategory(items) {
+  // return { categoryName: [items...] }
+}`,
+    testCases: [
+      "groupByCategory([{ category: 'js', id: 1 }, { category: 'css', id: 2 }, { category: 'js', id: 3 }]) -> { js: [...], css: [...] }",
+      'groupByCategory([]) -> {}',
+    ],
+    hints: ['Use the category as an object key.', 'Create the array for a category before pushing into it.'],
+    recommendedSolution: `function groupByCategory(items) {
+  return items.reduce((groups, item) => {
+    if (!groups[item.category]) {
+      groups[item.category] = [];
+    }
+    groups[item.category].push(item);
+    return groups;
+  }, {});
+}`,
+    explanation: 'Grouping is a data-modeling move: each category becomes a key and each key points to the records that belong there.',
+  },
+  {
+    id: 'update-item-immutably',
+    title: 'Update Item Immutably',
+    topicIds: ['crud-flow', 'state-validation'],
+    difficulty: 'Core',
+    prompt: 'Write a function that updates one item by ID without mutating the original array.',
+    starterCode: `function updateItem(items, id, changes) {
+  // return a new array with one updated item
+}`,
+    testCases: [
+      "updateItem([{ id: 'a', done: false }], 'a', { done: true }) -> [{ id: 'a', done: true }]",
+      "updateItem([{ id: 'a', done: false }], 'missing', { done: true }) -> original values",
+    ],
+    hints: ['Use map because each old item becomes one next item.', 'Only copy the matching item.'],
+    recommendedSolution: `function updateItem(items, id, changes) {
+  return items.map((item) => {
+    if (item.id !== id) {
+      return item;
+    }
+    return { ...item, ...changes };
+  });
+}`,
+    explanation: 'This mirrors a CRUD update: find the matching ID, return an updated copy, and leave every other record unchanged.',
+  },
+  {
+    id: 'promise-sequence',
+    title: 'Promise Sequence',
+    topicIds: ['async-promises'],
+    difficulty: 'Core',
+    prompt: 'Explain the order of logs when synchronous code, resolved promises, and async/await run together.',
+    starterCode: `console.log('A');
+
+Promise.resolve().then(() => console.log('B'));
+
+async function run() {
+  console.log('C');
+  await Promise.resolve();
+  console.log('D');
+}
+
+run();
+console.log('E');`,
+    testCases: ['Expected log order -> A, C, E, B, D'],
+    hints: ['Synchronous code runs first.', 'Promise callbacks and resumed async functions run later as microtasks.'],
+    recommendedSolution: `// A logs first because it is synchronous.
+// run() logs C synchronously until it reaches await.
+// E logs before promise microtasks resume.
+// Then B and D run from the microtask queue.
+// Final order: A, C, E, B, D.`,
+    explanation: 'async/await pauses at await, so the rest of the async function resumes after the current synchronous call stack completes.',
+  },
+  {
+    id: 'closure-counter',
+    title: 'Closure Counter',
+    topicIds: ['async-promises', 'state-validation'],
+    difficulty: 'Stretch',
+    prompt: 'Write a function that creates a counter with increment, decrement, and getValue methods.',
+    starterCode: `function createCounter(initialValue = 0) {
+  // return methods that remember the current count
+}`,
+    testCases: ['const counter = createCounter(2); counter.increment() -> 3; counter.decrement() -> 2; counter.getValue() -> 2'],
+    hints: ['Store the count in the outer function scope.', 'Return functions that close over that variable.'],
+    recommendedSolution: `function createCounter(initialValue = 0) {
+  let count = initialValue;
+
+  return {
+    increment() {
+      count += 1;
+      return count;
+    },
+    decrement() {
+      count -= 1;
+      return count;
+    },
+    getValue() {
+      return count;
+    },
+  };
+}`,
+    explanation: 'The returned methods keep access to count through closure even after createCounter has finished running.',
   },
 ];
 

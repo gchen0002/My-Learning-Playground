@@ -3,6 +3,7 @@ export type StorageKey =
   | 'mlp.progress'
   | 'mlp.quizAttempts'
   | 'mlp.exerciseResponses'
+  | 'mlp.drillAttempts'
   | 'mlp.mockInterviewAttempts';
 
 export const storageKeys = {
@@ -10,6 +11,7 @@ export const storageKeys = {
   progress: 'mlp.progress',
   quizAttempts: 'mlp.quizAttempts',
   exerciseResponses: 'mlp.exerciseResponses',
+  drillAttempts: 'mlp.drillAttempts',
   mockInterviewAttempts: 'mlp.mockInterviewAttempts',
 } as const;
 
