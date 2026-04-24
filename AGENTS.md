@@ -32,6 +32,7 @@ npm run test
 - Keep TypeScript types close to the data they describe.
 - Keep data operations in `storage.ts` or a future service module, not deeply inside UI components.
 - Keep behavior-heavy code in `services.ts` or future service modules so it stays testable.
+- Keep topic pages as guided hubs: broad explanation, deeper breakdown, mental model, then linked practice.
 - Preserve the local-first GitHub Pages direction.
 - Preserve the simple Paper Stack visual direction and the Light/Dark switch.
 - Avoid adding routing, auth, databases, or heavy frameworks until there is a concrete need.

@@ -7,7 +7,7 @@ The app is intentionally small: it runs in the browser, saves progress to `local
 ## What It Includes
 
 - A topic-based learning path for JavaScript, CRUD, implementation design, and simple system design.
-- Topic-based lessons with mental models for data, actions, state changes, and edge cases.
+- Topic-based lessons with broad explanations, deeper breakdowns, mental models, and linked practice.
 - A quiz flow that stores attempts locally.
 - Exercise prompts with filters, structured answer templates, and checklist scoring.
 - Design Mode prompts for requirements, entities, APIs, data flow, bottlenecks, and tradeoffs.

@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { exercises, quizQuestions } from './content';
+import { exercises, quizQuestions, topics } from './content';
 import {
   createMockInterviewPrompt,
   exportLocalData,
   filterExercises,
+  getChallengesForTopic,
   getChecklistScore,
+  getExercisesForTopic,
   getNotes,
   getProgress,
+  getQuestionsForTopic,
   importLocalData,
   saveExerciseResponse,
   saveNote,
@@ -33,6 +36,15 @@ describe('quiz scoring', () => {
 
     expect(attempt.score).toBe(quizQuestions.length);
     expect(exportLocalData().quizAttempts).toHaveLength(1);
+  });
+
+  it('scores a topic-focused quiz against only that topic', () => {
+    const questions = getQuestionsForTopic('arrays-objects');
+    const answers = Object.fromEntries(questions.map((question) => [question.id, question.answer]));
+    const attempt = submitQuizAttempt(answers, questions);
+
+    expect(attempt.score).toBe(questions.length);
+    expect(attempt.total).toBe(questions.length);
   });
 });
 
@@ -78,6 +90,25 @@ describe('exercise helpers', () => {
 
     expect(response.exerciseId).toBe(exercise.id);
     expect(exportLocalData().exerciseResponses).toHaveLength(1);
+  });
+});
+
+describe('topic relationship helpers', () => {
+  it('finds related quiz questions, exercises, and challenges', () => {
+    expect(getQuestionsForTopic('crud-flow').map((question) => question.id)).toContain('q-crud-1');
+    expect(getExercisesForTopic('crud-flow').map((exercise) => exercise.id)).toContain('todo-crud');
+    expect(getChallengesForTopic('requirements').map((challenge) => challenge.id)).toContain('url-shortener');
+  });
+
+  it('keeps every topic connected to learning detail and practice', () => {
+    for (const topic of topics) {
+      const relatedPracticeCount =
+        getQuestionsForTopic(topic.id).length + getExercisesForTopic(topic.id).length + getChallengesForTopic(topic.id).length;
+
+      expect(topic.basicExplanation.length).toBeGreaterThan(0);
+      expect(topic.deepDive.length).toBeGreaterThan(0);
+      expect(relatedPracticeCount).toBeGreaterThan(0);
+    }
   });
 });
 

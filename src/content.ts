@@ -7,7 +7,9 @@ export type Topic = {
   category: LearningCategory;
   order: number;
   summary: string;
+  basicExplanation: string;
   lesson: string;
+  deepDive: string[];
   checkpoint: string;
   mentalModel: {
     data: string;
@@ -32,6 +34,7 @@ export type Exercise = {
   title: string;
   category: LearningCategory;
   difficulty: Difficulty;
+  topicIds: string[];
   prompt: string;
   starterHints: string[];
   expectedConcepts: string[];
@@ -43,6 +46,7 @@ export type Challenge = {
   title: string;
   type: 'Implementation' | 'Design';
   difficulty: Difficulty;
+  topicIds: string[];
   prompt: string;
   checklist: string[];
   comparisonPrompt?: string;
@@ -55,8 +59,15 @@ export const topics: Topic[] = [
     category: 'JavaScript',
     order: 1,
     summary: 'Practice the data structures most JS interview tasks use.',
+    basicExplanation:
+      'Arrays and objects are the everyday containers of JavaScript. Arrays are best when order matters, and objects are best when you want to name or look up values by a key.',
     lesson:
       'Most JavaScript implementation questions start with arrays and objects. Arrays are ordered collections; objects model named properties. Your first move is usually to choose the shape that makes lookup, update, or grouping easiest.',
+    deepDive: [
+      'Use arrays when you need to preserve order, scan every item, sort values, or render a list.',
+      'Use objects or Maps when you need fast lookup by ID, grouping, counting, or deduping.',
+      'In interviews, say the shape out loud: "I will use an object keyed by ID so updates are direct instead of scanning the array."',
+    ],
     checkpoint: 'Before coding, say whether the problem needs ordering, lookup by key, or both.',
     mentalModel: {
       data: 'Input arrays, records, maps, IDs, and grouped values.',
@@ -71,8 +82,15 @@ export const topics: Topic[] = [
     category: 'JavaScript',
     order: 2,
     summary: 'Understand async flow, errors, and sequencing.',
+    basicExplanation:
+      'Async JavaScript handles work that finishes later, like loading data or saving something. Promises represent that future result, and async/await makes the steps easier to read.',
     lesson:
       'Promises represent work that finishes later. async/await makes promise code read like steps, but errors still need try/catch and parallel work may need Promise.all.',
+    deepDive: [
+      'Use await when one step depends on the previous result.',
+      'Use Promise.all when independent requests can run at the same time.',
+      'In interviews, mention loading, success, and error states because async code affects what the user sees.',
+    ],
     checkpoint: 'Name which work must happen in order and which work can happen in parallel.',
     mentalModel: {
       data: 'Pending, fulfilled, and rejected promise states.',
@@ -87,8 +105,15 @@ export const topics: Topic[] = [
     category: 'CRUD',
     order: 3,
     summary: 'Trace how create, read, update, and delete actions move through a small app.',
+    basicExplanation:
+      'CRUD means create, read, update, and delete. Most app features are some version of adding records, showing records, changing records, or removing records.',
     lesson:
       'CRUD is the backbone of product work. A user action starts in the UI, becomes validated data, updates storage, and returns a new state to display.',
+    deepDive: [
+      'Create needs validation, an ID, and a decision about where the new item appears.',
+      'Update needs to find one existing record and preserve fields that did not change.',
+      'Delete needs to handle confirmation, empty states, and what happens if the record no longer exists.',
+    ],
     checkpoint: 'Name the data being changed before deciding which screen or button to build.',
     mentalModel: {
       data: 'Records with IDs, fields, timestamps, and status values.',
@@ -103,8 +128,15 @@ export const topics: Topic[] = [
     category: 'Implementation',
     order: 4,
     summary: 'Turn product nouns into fields, IDs, and relationships.',
+    basicExplanation:
+      'A data model is the shape of the information your app stores. Before building screens, you decide the important nouns, their fields, and how they relate.',
     lesson:
       'Implementation design gets easier when the main entities are clear. A note needs an ID, body, timestamps, and a relationship to the thing it belongs to.',
+    deepDive: [
+      'Start with nouns from the prompt: user, note, quiz attempt, flashcard, bookmark.',
+      'Give each stored record an ID so it can be read, updated, deleted, or linked from another record.',
+      'In interviews, separate stored fields from derived values like counts, filtered lists, and percentages.',
+    ],
     checkpoint: 'Write the entity first, then sketch the screens and actions that use it.',
     mentalModel: {
       data: 'Entity fields, IDs, relationships, indexes, and derived values.',
@@ -119,8 +151,15 @@ export const topics: Topic[] = [
     category: 'Implementation',
     order: 5,
     summary: 'Break a feature into state, forms, validation, and UI feedback.',
+    basicExplanation:
+      'State is what the app remembers right now. Validation is how the app decides whether user input is safe and complete enough to save.',
     lesson:
       'Good implementation design separates raw input, validated data, saved records, and derived UI state. This makes edge cases easier to reason about in interviews.',
+    deepDive: [
+      'Keep draft form state separate from saved records so cancel/reset behavior is clear.',
+      'Validate before saving, then show useful feedback when input is blank, duplicated, or invalid.',
+      'Explain state transitions: empty form, typing, validation error, saving, saved, or failed.',
+    ],
     checkpoint: 'Explain what state exists before, during, and after the user action.',
     mentalModel: {
       data: 'Draft form values, validation errors, saved records, and derived filters.',
@@ -135,8 +174,15 @@ export const topics: Topic[] = [
     category: 'Implementation',
     order: 6,
     summary: 'Use endpoint-style thinking even in a local-only app.',
+    basicExplanation:
+      'An API shape is the contract for an action. Even without a backend, naming actions like createNote or submitQuizAttempt makes the app easier to reason about.',
     lesson:
       'An API shape is a contract. Even when storage is local, functions like createNote or submitQuizAttempt separate interface code from data rules.',
+    deepDive: [
+      'Think in inputs and outputs: what payload comes in, what result comes back, and what errors can happen.',
+      'Keep business rules in service functions instead of scattering them through UI components.',
+      'In interviews, endpoint-style thinking helps you explain boundaries even if you are coding locally.',
+    ],
     checkpoint: 'Keep UI components focused on intent, and move data rules into service functions.',
     mentalModel: {
       data: 'Request payloads, response values, errors, and IDs.',
@@ -151,8 +197,15 @@ export const topics: Topic[] = [
     category: 'System Design',
     order: 7,
     summary: 'Split what the system must do from how reliable or fast it needs to be.',
+    basicExplanation:
+      'Requirements describe what you are building. Functional requirements are behaviors; non-functional requirements are qualities like speed, reliability, and scale.',
     lesson:
       'System design starts with requirements. Functional requirements describe behavior; non-functional requirements describe qualities like scale, latency, cost, and safety.',
+    deepDive: [
+      'Functional requirements answer: what can users do?',
+      'Non-functional requirements answer: how fast, reliable, secure, or scalable must it be?',
+      'In design interviews, requirements keep you from designing a system for the wrong problem.',
+    ],
     checkpoint: 'Before designing, ask what must happen and what qualities matter most.',
     mentalModel: {
       data: 'Users, records, events, and system limits.',
@@ -167,8 +220,15 @@ export const topics: Topic[] = [
     category: 'System Design',
     order: 8,
     summary: 'Explain how a browser-only feature changes when many users need it.',
+    basicExplanation:
+      'A local app stores data for one browser. A service stores shared data for many users, so it needs identity, permissions, APIs, and server-side storage.',
     lesson:
       'A local app stores data for one browser. A multi-user service needs authentication, shared storage, access control, APIs, observability, and tradeoffs around consistency and scale.',
+    deepDive: [
+      'Local storage is simple because only one browser writes the data.',
+      'A shared service must handle many users reading and writing at the same time.',
+      'In interviews, explain what moves from the client to the server and what new risks appear.',
+    ],
     checkpoint: 'For every local feature, ask what changes when the data must be shared safely.',
     mentalModel: {
       data: 'User-owned records, shared records, permissions, and audit events.',
@@ -269,6 +329,7 @@ export const exercises: Exercise[] = [
     title: 'Todo CRUD',
     category: 'CRUD',
     difficulty: 'Starter',
+    topicIds: ['crud-flow'],
     prompt: 'Design and explain a todo list with create, read, update, delete, validation, and empty states.',
     starterHints: ['What fields does a todo need?', 'What happens after deleting the last item?', 'How do you validate blank input?'],
     expectedConcepts: ['Entity model', 'CRUD operations', 'Validation', 'Empty states'],
@@ -279,6 +340,7 @@ export const exercises: Exercise[] = [
     title: 'Bookmark Manager',
     category: 'Implementation',
     difficulty: 'Starter',
+    topicIds: ['data-models', 'state-validation'],
     prompt: 'Plan a saved links feature with tags, search, edit, and delete.',
     starterHints: ['What makes a URL valid?', 'How are tags stored?', 'What should search inspect?'],
     expectedConcepts: ['Form validation', 'Filtering', 'Many-to-many thinking', 'Update flow'],
@@ -289,6 +351,7 @@ export const exercises: Exercise[] = [
     title: 'Flashcard Deck',
     category: 'CRUD',
     difficulty: 'Core',
+    topicIds: ['crud-flow', 'data-models'],
     prompt: 'Design flashcard deck CRUD plus a review queue.',
     starterHints: ['Separate deck from cards.', 'Track review results.', 'Decide what can be derived.'],
     expectedConcepts: ['Related entities', 'Derived state', 'Progress tracking', 'Review history'],
@@ -299,6 +362,7 @@ export const exercises: Exercise[] = [
     title: 'Quiz Attempt History',
     category: 'Implementation',
     difficulty: 'Core',
+    topicIds: ['data-models', 'api-shapes'],
     prompt: 'Design how this app should store, display, filter, and delete quiz attempts over time.',
     starterHints: ['What belongs on an attempt?', 'Which stats are derived?', 'Can attempts be deleted?'],
     expectedConcepts: ['Append-only history', 'Dashboard summaries', 'Delete behavior', 'Filtering'],
@@ -309,6 +373,7 @@ export const exercises: Exercise[] = [
     title: 'Shopping Cart',
     category: 'Implementation',
     difficulty: 'Core',
+    topicIds: ['state-validation'],
     prompt: 'Plan cart add/remove/update quantity behavior with totals.',
     starterHints: ['What is stored: product or cart item?', 'How do totals update?', 'What quantity values are allowed?'],
     expectedConcepts: ['State shape', 'Derived totals', 'Validation', 'Optimistic updates'],
@@ -319,6 +384,7 @@ export const exercises: Exercise[] = [
     title: 'Comment Thread',
     category: 'Implementation',
     difficulty: 'Stretch',
+    topicIds: ['data-models'],
     prompt: 'Design comments with replies, edit/delete, sorting, and collapsed threads.',
     starterHints: ['How does a reply reference a parent?', 'What does delete mean with replies?', 'How should sorting work?'],
     expectedConcepts: ['Tree data', 'Parent IDs', 'Soft delete', 'Sorting'],
@@ -329,6 +395,7 @@ export const exercises: Exercise[] = [
     title: 'User Preferences',
     category: 'CRUD',
     difficulty: 'Starter',
+    topicIds: ['crud-flow'],
     prompt: 'Design local preference settings with update, reset, and export/import.',
     starterHints: ['Which preferences need defaults?', 'What happens with unknown imported keys?', 'How do you validate values?'],
     expectedConcepts: ['Defaults', 'Validation', 'Persistence', 'Import/export'],
@@ -339,6 +406,7 @@ export const exercises: Exercise[] = [
     title: 'Search and Filter List',
     category: 'JavaScript',
     difficulty: 'Starter',
+    topicIds: ['arrays-objects'],
     prompt: 'Implement the thinking behind searching, filtering, sorting, and paginating a list.',
     starterHints: ['Which state is source data?', 'Which state is derived?', 'What order should filter/sort/page run?'],
     expectedConcepts: ['Array methods', 'Derived state', 'Pagination', 'Stable sorting'],
@@ -349,6 +417,7 @@ export const exercises: Exercise[] = [
     title: 'Undo Delete',
     category: 'Implementation',
     difficulty: 'Stretch',
+    topicIds: ['state-validation'],
     prompt: 'Design a delete flow where the user can undo for a few seconds.',
     starterHints: ['Is the record deleted immediately?', 'Where is pending deletion stored?', 'What if the user navigates away?'],
     expectedConcepts: ['Soft delete', 'Timers', 'Pending state', 'User feedback'],
@@ -359,6 +428,7 @@ export const exercises: Exercise[] = [
     title: 'Import and Export Saved Data',
     category: 'Implementation',
     difficulty: 'Core',
+    topicIds: ['api-shapes'],
     prompt: 'Plan a browser-only import/export feature for notes, progress, attempts, and exercise responses.',
     starterHints: ['What is the file shape?', 'How do you validate imported JSON?', 'Should import merge or replace?'],
     expectedConcepts: ['Serialization', 'Validation', 'Migration', 'Conflict handling'],
@@ -372,6 +442,7 @@ export const challenges: Challenge[] = [
     title: 'URL Shortener System',
     type: 'Design',
     difficulty: 'Core',
+    topicIds: ['requirements'],
     prompt: 'Sketch a beginner system design for a service that turns long URLs into short links.',
     checklist: ['Functional requirements', 'Core entities', 'API ideas', 'Read path', 'Write path', 'Rate limiting'],
     comparisonPrompt: 'How would this differ from storing links in this local-only browser app?',
@@ -381,6 +452,7 @@ export const challenges: Challenge[] = [
     title: 'Notes App as a Service',
     type: 'Design',
     difficulty: 'Starter',
+    topicIds: ['requirements', 'scaling-local-to-service'],
     prompt: 'Turn the local notes feature into a multi-user notes service.',
     checklist: ['Auth', 'Note ownership', 'CRUD APIs', 'Search', 'Sync behavior', 'Access control'],
     comparisonPrompt: 'What must move from localStorage to a server, and what can stay client-side?',
@@ -390,6 +462,7 @@ export const challenges: Challenge[] = [
     title: 'Quiz Platform',
     type: 'Design',
     difficulty: 'Core',
+    topicIds: ['requirements', 'scaling-local-to-service'],
     prompt: 'Design a platform where users take quizzes and review attempt history.',
     checklist: ['Question storage', 'Attempt storage', 'Scoring', 'Analytics', 'Versioning', 'Abuse cases'],
     comparisonPrompt: 'What changes when quiz content is edited after attempts already exist?',
@@ -399,6 +472,7 @@ export const challenges: Challenge[] = [
     title: 'Flashcard Review System',
     type: 'Design',
     difficulty: 'Core',
+    topicIds: ['requirements'],
     prompt: 'Design a spaced repetition system for flashcards.',
     checklist: ['Decks and cards', 'Review scheduling', 'Attempt history', 'Read/write paths', 'Background jobs'],
     comparisonPrompt: 'Which parts can be computed on the client, and which need server storage?',
@@ -408,6 +482,7 @@ export const challenges: Challenge[] = [
     title: 'Notification System',
     type: 'Design',
     difficulty: 'Stretch',
+    topicIds: ['scaling-local-to-service'],
     prompt: 'Design a basic system for sending email or in-app notifications after an event happens.',
     checklist: ['Trigger events', 'Storage', 'Async processing', 'Retries', 'Failures', 'User preferences'],
     comparisonPrompt: 'Why is async processing useful compared with sending during the original request?',
@@ -417,6 +492,7 @@ export const challenges: Challenge[] = [
     title: 'File Upload Metadata Service',
     type: 'Design',
     difficulty: 'Stretch',
+    topicIds: ['scaling-local-to-service'],
     prompt: 'Design metadata tracking for uploaded files without focusing on raw file storage.',
     checklist: ['Metadata model', 'Upload flow', 'Permissions', 'Virus scan state', 'Background jobs'],
     comparisonPrompt: 'What statuses would the UI need while upload and scanning are happening?',
@@ -426,6 +502,7 @@ export const challenges: Challenge[] = [
     title: 'Event RSVP System',
     type: 'Design',
     difficulty: 'Core',
+    topicIds: ['requirements'],
     prompt: 'Design events, invites, RSVP status, capacity, and waitlists.',
     checklist: ['Entities', 'Capacity rules', 'Status changes', 'Race conditions', 'Notifications'],
     comparisonPrompt: 'What race conditions appear when many people RSVP at the same time?',

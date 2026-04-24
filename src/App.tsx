@@ -13,18 +13,21 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
-import { challenges, exercises, quizQuestions, topics, type Difficulty, type LearningCategory } from './content';
+import { challenges, exercises, quizQuestions, topics, type Challenge, type Difficulty, type Exercise, type LearningCategory } from './content';
 import {
   createMockInterviewPrompt,
   deleteExerciseResponse,
   deleteNote,
   exportLocalData,
   filterExercises,
+  getChallengesForTopic,
   getChecklistScore,
+  getExercisesForTopic,
   getExerciseResponses,
   getMockInterviewAttempts,
   getNotes,
   getProgress,
+  getQuestionsForTopic,
   getQuizAttempts,
   importLocalData,
   resetLocalProgress,
@@ -114,6 +117,7 @@ export function App() {
   const [mockAttempts, setMockAttempts] = useState<MockInterviewAttempt[]>(() => getMockInterviewAttempts());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [latestAttempt, setLatestAttempt] = useState<QuizAttempt | null>(null);
+  const [quizTopicId, setQuizTopicId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [exerciseSections, setExerciseSections] = useState(emptyExerciseSections);
   const [exerciseChecklist, setExerciseChecklist] = useState<ChecklistResult>({});
@@ -132,6 +136,11 @@ export function App() {
       ? 0
       : Math.round((attempts.reduce((total, attempt) => total + attempt.score / attempt.total, 0) / attempts.length) * 100);
   const savedExerciseResponse = exerciseResponses.find((response) => response.exerciseId === activeExercise.id);
+  const activeTopicQuestions = getQuestionsForTopic(activeTopic.id);
+  const activeTopicExercises = getExercisesForTopic(activeTopic.id);
+  const activeTopicChallenges = getChallengesForTopic(activeTopic.id);
+  const quizQuestionsToShow = quizTopicId ? getQuestionsForTopic(quizTopicId) : quizQuestions;
+  const quizTopic = quizTopicId ? topics.find((topic) => topic.id === quizTopicId) : null;
 
   useEffect(() => {
     document.documentElement.dataset.mode = colorMode;
@@ -167,13 +176,26 @@ export function App() {
   }
 
   function handleSubmitQuiz() {
-    if (Object.keys(quizAnswers).length !== quizQuestions.length) {
+    if (Object.keys(quizAnswers).length !== quizQuestionsToShow.length) {
       return;
     }
 
-    const attempt = submitQuizAttempt(quizAnswers);
+    const attempt = submitQuizAttempt(quizAnswers, quizQuestionsToShow);
     setAttempts(getQuizAttempts());
     setLatestAttempt(attempt);
+  }
+
+  function handleLaunchTopicQuiz(topicId: string) {
+    setQuizTopicId(topicId);
+    setQuizAnswers({});
+    setLatestAttempt(null);
+    setActiveView('quiz');
+  }
+
+  function handleClearTopicQuiz() {
+    setQuizTopicId(null);
+    setQuizAnswers({});
+    setLatestAttempt(null);
   }
 
   function handleSelectExercise(id: string) {
@@ -181,6 +203,18 @@ export function App() {
     setActiveExerciseId(id);
     setExerciseSections(response?.sections ?? emptyExerciseSections);
     setExerciseChecklist(response?.checklist ?? {});
+  }
+
+  function handleLaunchExercise(id: string) {
+    setCategoryFilter('All');
+    setDifficultyFilter('All');
+    handleSelectExercise(id);
+    setActiveView('exercises');
+  }
+
+  function handleLaunchChallenge(id: string) {
+    setActiveChallengeId(id);
+    setActiveView('design');
   }
 
   function handleSaveExerciseResponse() {
@@ -338,7 +372,19 @@ export function App() {
                   <h3>{activeTopic.title}</h3>
                 </div>
               </div>
-              <p>{activeTopic.lesson}</p>
+              <section className="learning-section">
+                <p className="section-label">Broad explanation</p>
+                <p>{activeTopic.basicExplanation}</p>
+              </section>
+              <section className="learning-section">
+                <p className="section-label">More specific</p>
+                <p>{activeTopic.lesson}</p>
+                <ul className="deep-dive-list">
+                  {activeTopic.deepDive.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
               <section className="mental-grid">
                 {Object.entries(activeTopic.mentalModel).map(([label, value]) => (
                   <div className="mini-panel" key={label}>
@@ -363,6 +409,14 @@ export function App() {
                   </button>
                 ))}
               </div>
+              <RelatedPractice
+                challenges={activeTopicChallenges}
+                exercises={activeTopicExercises}
+                onOpenChallenge={handleLaunchChallenge}
+                onOpenExercise={handleLaunchExercise}
+                onOpenQuiz={() => handleLaunchTopicQuiz(activeTopic.id)}
+                questionCount={activeTopicQuestions.length}
+              />
               <NoteComposer
                 buttonLabel="Save topic note"
                 draft={noteDraft}
@@ -375,7 +429,18 @@ export function App() {
 
         {activeView === 'quiz' && (
           <section className="quiz-panel">
-            {quizQuestions.map((question, index) => (
+            {quizTopic && (
+              <div className="topic-filter-banner">
+                <div>
+                  <span>Topic quiz</span>
+                  <strong>{quizTopic.title}</strong>
+                </div>
+                <button className="secondary-button" onClick={handleClearTopicQuiz} type="button">
+                  Clear topic filter
+                </button>
+              </div>
+            )}
+            {quizQuestionsToShow.map((question, index) => (
               <fieldset className="question-card" key={question.id}>
                 <legend>{index + 1}. {question.prompt}</legend>
                 <p className="tagline">{question.category}</p>
@@ -402,7 +467,7 @@ export function App() {
             <div className="action-row">
               <button
                 className="primary-button"
-                disabled={Object.keys(quizAnswers).length !== quizQuestions.length}
+                disabled={Object.keys(quizAnswers).length !== quizQuestionsToShow.length}
                 onClick={handleSubmitQuiz}
                 type="button"
               >
@@ -626,6 +691,63 @@ function NoteComposer({ buttonLabel, draft, onChange, onSave }: NoteComposerProp
         {buttonLabel}
       </button>
     </div>
+  );
+}
+
+function RelatedPractice({
+  challenges,
+  exercises,
+  onOpenChallenge,
+  onOpenExercise,
+  onOpenQuiz,
+  questionCount,
+}: {
+  challenges: Challenge[];
+  exercises: Exercise[];
+  onOpenChallenge: (id: string) => void;
+  onOpenExercise: (id: string) => void;
+  onOpenQuiz: () => void;
+  questionCount: number;
+}) {
+  if (questionCount === 0 && exercises.length === 0 && challenges.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="related-practice">
+      <div>
+        <p className="section-label">Practice this topic</p>
+        <h4>Jump into the matching quiz, exercises, and design prompts.</h4>
+      </div>
+      {questionCount > 0 && (
+        <button className="practice-link primary-practice" onClick={onOpenQuiz} type="button">
+          <span>{questionCount} question{questionCount === 1 ? '' : 's'}</span>
+          <strong>Start topic quiz</strong>
+        </button>
+      )}
+      {exercises.length > 0 && (
+        <div className="practice-group">
+          <span>Exercises</span>
+          {exercises.map((exercise) => (
+            <button className="practice-link" key={exercise.id} onClick={() => onOpenExercise(exercise.id)} type="button">
+              <span>{exercise.difficulty}</span>
+              <strong>{exercise.title}</strong>
+            </button>
+          ))}
+        </div>
+      )}
+      {challenges.length > 0 && (
+        <div className="practice-group">
+          <span>Design prompts</span>
+          {challenges.map((challenge) => (
+            <button className="practice-link" key={challenge.id} onClick={() => onOpenChallenge(challenge.id)} type="button">
+              <span>{challenge.difficulty}</span>
+              <strong>{challenge.title}</strong>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

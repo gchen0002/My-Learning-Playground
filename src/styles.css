@@ -308,6 +308,90 @@ h3 {
   border-radius: 8px;
 }
 
+.learning-section {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.section-label {
+  margin: 0;
+  color: var(--coral);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deep-dive-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.related-practice {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0;
+  padding: 16px;
+  background: color-mix(in srgb, var(--surface-strong) 62%, var(--bg));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.related-practice h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.practice-group {
+  display: grid;
+  gap: 8px;
+}
+
+.practice-group > span,
+.topic-filter-banner span,
+.practice-link span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.practice-link {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.practice-link:hover,
+.practice-link.primary-practice {
+  border-color: color-mix(in srgb, var(--green) 45%, var(--line));
+}
+
+.topic-filter-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  background: color-mix(in srgb, var(--green) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--green) 24%, var(--line));
+  border-radius: 8px;
+}
+
+.topic-filter-banner strong {
+  display: block;
+}
+
 .status-row {
   display: flex;
   flex-wrap: wrap;

@@ -72,15 +72,27 @@ export function scoreQuiz(questions: QuizQuestion[], answers: Record<string, str
   return questions.reduce((score, question) => (answers[question.id] === question.answer ? score + 1 : score), 0);
 }
 
+export function getQuestionsForTopic(topicId: string) {
+  return quizQuestions.filter((question) => question.topicId === topicId);
+}
+
+export function getExercisesForTopic(topicId: string) {
+  return exercises.filter((exercise) => exercise.topicIds.includes(topicId));
+}
+
+export function getChallengesForTopic(topicId: string) {
+  return challenges.filter((challenge) => challenge.topicIds.includes(topicId));
+}
+
 export function getQuizAttempts() {
   return readJson<QuizAttempt[]>(storageKeys.quizAttempts, []);
 }
 
-export function submitQuizAttempt(answers: Record<string, string>) {
+export function submitQuizAttempt(answers: Record<string, string>, questions: QuizQuestion[] = quizQuestions) {
   const attempt: QuizAttempt = {
     id: createId(),
-    score: scoreQuiz(quizQuestions, answers),
-    total: quizQuestions.length,
+    score: scoreQuiz(questions, answers),
+    total: questions.length,
     answers,
     createdAt: new Date().toISOString(),
   };
