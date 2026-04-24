@@ -11,6 +11,7 @@ Keep the app approachable. Prefer clear code and visible learning structure over
 - `src/content.ts` contains hardcoded learning content.
 - `src/storage.ts` owns low-level localStorage helpers.
 - `src/services.ts` owns CRUD-like operations, scoring, filtering, import/export, and mock interview prompts.
+- `src/templates.ts` owns the five route-based UI template definitions.
 - `src/App.tsx` owns the prototype UI and view state.
 - `src/styles.css` owns global styling.
 - `src/services.test.ts` covers logic-heavy behavior.
@@ -33,6 +34,7 @@ npm run test
 - Keep data operations in `storage.ts` or a future service module, not deeply inside UI components.
 - Keep behavior-heavy code in `services.ts` or future service modules so it stays testable.
 - Preserve the local-first GitHub Pages direction.
+- Preserve the `/1` through `/5` template routes and the simple Light/Dark switch.
 - Avoid adding routing, auth, databases, or heavy frameworks until there is a concrete need.
 - Make the learning flow more useful before making the UI more decorative.
 - Keep copy plain and beginner-friendly.

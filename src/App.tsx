@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   BookOpen,
   CheckCircle2,
@@ -43,6 +43,7 @@ import {
   type ProgressStatus,
   type QuizAttempt,
 } from './services';
+import { getTemplateFromPath, templates, type ColorMode, type TemplateId } from './templates';
 
 type View = 'learn' | 'quiz' | 'exercises' | 'design' | 'mock' | 'progress';
 
@@ -54,6 +55,8 @@ const views: { id: View; label: string }[] = [
   { id: 'mock', label: 'Mock Interview' },
   { id: 'progress', label: 'Progress' },
 ];
+
+const colorModeKey = 'mlp.colorMode';
 
 const emptyExerciseSections: ExerciseResponse['sections'] = {
   requirements: '',
@@ -94,6 +97,10 @@ function refreshLocalState() {
 }
 
 export function App() {
+  const [templateId, setTemplateId] = useState<TemplateId>(() => getTemplateFromPath(window.location.pathname));
+  const [colorMode, setColorMode] = useState<ColorMode>(() => {
+    return window.localStorage.getItem(colorModeKey) === 'dark' ? 'dark' : 'light';
+  });
   const [activeView, setActiveView] = useState<View>('learn');
   const [activeTopicId, setActiveTopicId] = useState(topics[0].id);
   const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
@@ -125,6 +132,21 @@ export function App() {
       ? 0
       : Math.round((attempts.reduce((total, attempt) => total + attempt.score / attempt.total, 0) / attempts.length) * 100);
   const savedExerciseResponse = exerciseResponses.find((response) => response.exerciseId === activeExercise.id);
+
+  useEffect(() => {
+    document.documentElement.dataset.template = templateId;
+    document.documentElement.dataset.mode = colorMode;
+    window.localStorage.setItem(colorModeKey, colorMode);
+  }, [colorMode, templateId]);
+
+  useEffect(() => {
+    function handlePopState() {
+      setTemplateId(getTemplateFromPath(window.location.pathname));
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   function syncState() {
     const nextState = refreshLocalState();
@@ -239,8 +261,14 @@ export function App() {
     setImportMessage('');
   }
 
+  function handleTemplateChange(nextTemplateId: TemplateId) {
+    const repoBase = window.location.pathname.startsWith('/My-Learning-Playground') ? '/My-Learning-Playground' : '';
+    setTemplateId(nextTemplateId);
+    window.history.pushState({}, '', `${repoBase}/${nextTemplateId}`);
+  }
+
   return (
-    <main className="app-shell">
+    <main className={`app-shell template-${templateId} mode-${colorMode}`}>
       <aside className="sidebar">
         <div className="brand-block">
           <div className="brand-mark">
@@ -250,6 +278,24 @@ export function App() {
             <p className="eyebrow">3-week interview prep</p>
             <h1>My Learning Playground</h1>
           </div>
+        </div>
+
+        <div className="template-panel">
+          <p className="eyebrow">Templates</p>
+          <div className="template-grid">
+            {templates.map((template) => (
+              <button
+                className={template.id === templateId ? 'template-chip active' : 'template-chip'}
+                key={template.id}
+                onClick={() => handleTemplateChange(template.id)}
+                title={template.description}
+                type="button"
+              >
+                /{template.id}
+              </button>
+            ))}
+          </div>
+          <strong>{templates.find((template) => template.id === templateId)?.name}</strong>
         </div>
 
         <nav className="nav-list" aria-label="Primary">
@@ -279,6 +325,14 @@ export function App() {
             <h2>{views.find((view) => view.id === activeView)?.label}</h2>
           </div>
           <div className="toolbar">
+            <div className="mode-switch" aria-label="Color mode">
+              <button className={colorMode === 'light' ? 'active' : ''} onClick={() => setColorMode('light')} type="button">
+                Light
+              </button>
+              <button className={colorMode === 'dark' ? 'active' : ''} onClick={() => setColorMode('dark')} type="button">
+                Dark
+              </button>
+            </div>
             <button className="icon-button" onClick={handleExport} title="Export local data" type="button">
               <Download aria-hidden="true" size={18} />
             </button>

@@ -13,6 +13,7 @@ The app is intentionally small: it runs in the browser, saves progress to `local
 - Design Mode prompts for requirements, entities, APIs, data flow, bottlenecks, and tradeoffs.
 - Mock Interview mode with one JavaScript question, one CRUD prompt, and one system design prompt.
 - Notes, progress tracking, import/export, and a dashboard.
+- Five simple UI templates at `/1`, `/2`, `/3`, `/4`, and `/5`, each with light and dark mode.
 
 ## Tech Stack
 
@@ -85,3 +86,15 @@ The app stores progress, notes, and quiz attempts in your browser under these ke
 - `mlp.mockInterviewAttempts`
 
 Use the reset button in the app header to clear local study data.
+
+## UI Templates
+
+The app supports five lightweight visual templates:
+
+- `/1` Library Desk
+- `/2` Terminal Notes
+- `/3` Paper Stack
+- `/4` Studio Board
+- `/5` Quiet Console
+
+Use the template buttons in the sidebar to switch layouts and the Light/Dark switch in the top toolbar to change color mode.
