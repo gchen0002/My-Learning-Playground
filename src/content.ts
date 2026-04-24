@@ -5,7 +5,7 @@ export type Topic = {
   id: string;
   title: string;
   category: LearningCategory;
-  week: 1 | 2 | 3;
+  order: number;
   summary: string;
   lesson: string;
   checkpoint: string;
@@ -53,7 +53,7 @@ export const topics: Topic[] = [
     id: 'arrays-objects',
     title: 'Arrays and Objects',
     category: 'JavaScript',
-    week: 1,
+    order: 1,
     summary: 'Practice the data structures most JS interview tasks use.',
     lesson:
       'Most JavaScript implementation questions start with arrays and objects. Arrays are ordered collections; objects model named properties. Your first move is usually to choose the shape that makes lookup, update, or grouping easiest.',
@@ -69,7 +69,7 @@ export const topics: Topic[] = [
     id: 'async-promises',
     title: 'Promises and async/await',
     category: 'JavaScript',
-    week: 1,
+    order: 2,
     summary: 'Understand async flow, errors, and sequencing.',
     lesson:
       'Promises represent work that finishes later. async/await makes promise code read like steps, but errors still need try/catch and parallel work may need Promise.all.',
@@ -85,7 +85,7 @@ export const topics: Topic[] = [
     id: 'crud-flow',
     title: 'CRUD Flow',
     category: 'CRUD',
-    week: 1,
+    order: 3,
     summary: 'Trace how create, read, update, and delete actions move through a small app.',
     lesson:
       'CRUD is the backbone of product work. A user action starts in the UI, becomes validated data, updates storage, and returns a new state to display.',
@@ -101,7 +101,7 @@ export const topics: Topic[] = [
     id: 'data-models',
     title: 'Data Models',
     category: 'Implementation',
-    week: 1,
+    order: 4,
     summary: 'Turn product nouns into fields, IDs, and relationships.',
     lesson:
       'Implementation design gets easier when the main entities are clear. A note needs an ID, body, timestamps, and a relationship to the thing it belongs to.',
@@ -117,7 +117,7 @@ export const topics: Topic[] = [
     id: 'state-validation',
     title: 'State Shape and Validation',
     category: 'Implementation',
-    week: 2,
+    order: 5,
     summary: 'Break a feature into state, forms, validation, and UI feedback.',
     lesson:
       'Good implementation design separates raw input, validated data, saved records, and derived UI state. This makes edge cases easier to reason about in interviews.',
@@ -133,7 +133,7 @@ export const topics: Topic[] = [
     id: 'api-shapes',
     title: 'API Shapes',
     category: 'Implementation',
-    week: 2,
+    order: 6,
     summary: 'Use endpoint-style thinking even in a local-only app.',
     lesson:
       'An API shape is a contract. Even when storage is local, functions like createNote or submitQuizAttempt separate interface code from data rules.',
@@ -149,7 +149,7 @@ export const topics: Topic[] = [
     id: 'requirements',
     title: 'Requirements First',
     category: 'System Design',
-    week: 3,
+    order: 7,
     summary: 'Split what the system must do from how reliable or fast it needs to be.',
     lesson:
       'System design starts with requirements. Functional requirements describe behavior; non-functional requirements describe qualities like scale, latency, cost, and safety.',
@@ -165,7 +165,7 @@ export const topics: Topic[] = [
     id: 'scaling-local-to-service',
     title: 'From Local App to Service',
     category: 'System Design',
-    week: 3,
+    order: 8,
     summary: 'Explain how a browser-only feature changes when many users need it.',
     lesson:
       'A local app stores data for one browser. A multi-user service needs authentication, shared storage, access control, APIs, observability, and tradeoffs around consistency and scale.',

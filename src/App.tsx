@@ -259,7 +259,7 @@ export function App() {
             <GraduationCap aria-hidden="true" size={24} />
           </div>
           <div>
-            <p className="eyebrow">3-week interview prep</p>
+            <p className="eyebrow">Interview prep topics</p>
             <h1>My Learning Playground</h1>
           </div>
         </div>
@@ -323,7 +323,7 @@ export function App() {
                   onClick={() => setActiveTopicId(topic.id)}
                   type="button"
                 >
-                  <span>Week {topic.week} / {topic.category}</span>
+                  <span>Topic {topic.order} / {topic.category}</span>
                   <strong>{topic.title}</strong>
                   <small>{topic.summary}</small>
                 </button>

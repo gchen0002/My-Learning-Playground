@@ -6,7 +6,7 @@ The app is intentionally small: it runs in the browser, saves progress to `local
 
 ## What It Includes
 
-- A 3-week learning path for JavaScript, CRUD, implementation design, and simple system design.
+- A topic-based learning path for JavaScript, CRUD, implementation design, and simple system design.
 - Topic-based lessons with mental models for data, actions, state changes, and edge cases.
 - A quiz flow that stores attempts locally.
 - Exercise prompts with filters, structured answer templates, and checklist scoring.
