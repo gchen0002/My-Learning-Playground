@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  Bookmark,
   BookOpen,
   CheckCircle2,
   ClipboardList,
@@ -7,10 +8,14 @@ import {
   Download,
   FileUp,
   GraduationCap,
+  House,
   Layers3,
+  ListTodo,
+  NotebookPen,
   Play,
   RotateCcw,
   Save,
+  Settings2,
   Trash2,
 } from 'lucide-react';
 import {
@@ -67,6 +72,9 @@ import {
 } from './services';
 
 type View = 'learn' | 'quiz' | 'drills' | 'exercises' | 'design' | 'mock' | 'progress';
+type LearnScreen = 'home' | 'topic';
+type LearnTab = 'overview' | 'breakdown' | 'mental' | 'practice';
+type ProgressTab = 'overview' | 'history';
 
 const views: { id: View; label: string }[] = [
   { id: 'learn', label: 'Learn' },
@@ -77,6 +85,16 @@ const views: { id: View; label: string }[] = [
   { id: 'mock', label: 'Mock Interview' },
   { id: 'progress', label: 'Progress' },
 ];
+
+const viewDescriptions: Record<View, string> = {
+  learn: 'Read the lesson, build the mental model, and jump into matching practice.',
+  quiz: 'Check understanding with short questions and quick feedback.',
+  drills: 'Practice implementation thinking with focused JavaScript drills.',
+  exercises: 'Write structured responses for CRUD and system design prompts.',
+  design: 'Break a system down into requirements, entities, APIs, and tradeoffs.',
+  mock: 'Run a calm practice set that mixes concept, CRUD, and design thinking.',
+  progress: 'Review your saved work, history, and what to revisit next.',
+};
 
 const colorModeKey = 'mlp.colorMode';
 
@@ -137,9 +155,12 @@ function refreshLocalState() {
 
 export function App() {
   const [colorMode, setColorMode] = useState<ColorMode>(() => {
-    return window.localStorage.getItem(colorModeKey) === 'light' ? 'light' : 'dark';
+    return window.localStorage.getItem(colorModeKey) === 'dark' ? 'dark' : 'light';
   });
   const [activeView, setActiveView] = useState<View>('learn');
+  const [learnScreen, setLearnScreen] = useState<LearnScreen>('home');
+  const [learnTab, setLearnTab] = useState<LearnTab>('overview');
+  const [progressTab, setProgressTab] = useState<ProgressTab>('overview');
   const [activeTopicId, setActiveTopicId] = useState(topics[0].id);
   const [activeDrillId, setActiveDrillId] = useState(codeDrills[0].id);
   const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
@@ -189,6 +210,32 @@ export function App() {
   const activeTopicChallenges = getChallengesForTopic(activeTopic.id);
   const quizQuestionsToShow = quizTopicId ? getQuestionsForTopic(quizTopicId) : quizQuestions;
   const quizTopic = quizTopicId ? topics.find((topic) => topic.id === quizTopicId) : null;
+  const activeViewMeta = views.find((view) => view.id === activeView) ?? views[0];
+  const currentTopicProgress = progress[activeTopic.id] ?? 'not_started';
+  const practiceViews: View[] = ['quiz', 'drills', 'exercises', 'design', 'mock'];
+  const isPracticeView = practiceViews.includes(activeView);
+  const primaryNav = isPracticeView ? 'practice' : activeView;
+  const topicGroups = useMemo(() => {
+    const grouped = new Map<LearningCategory, { category: LearningCategory; title: string; count: number }>();
+
+    topics.forEach((topic) => {
+      const existing = grouped.get(topic.category);
+      grouped.set(topic.category, {
+        category: topic.category,
+        title:
+          topic.category === 'JavaScript'
+            ? 'JavaScript Essentials'
+            : topic.category === 'CRUD'
+              ? 'CRUD Flow'
+              : topic.category === 'Implementation'
+                ? 'Implementation Design'
+                : 'System Design',
+        count: (existing?.count ?? 0) + 1,
+      });
+    });
+
+    return [...grouped.values()];
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.mode = colorMode;
@@ -245,6 +292,33 @@ export function App() {
     setQuizTopicId(null);
     setQuizAnswers({});
     setLatestAttempt(null);
+  }
+
+  function handleOpenLearnHome() {
+    setActiveView('learn');
+    setLearnScreen('home');
+  }
+
+  function handleOpenTopic(topicId: string) {
+    setActiveTopicId(topicId);
+    setActiveView('learn');
+    setLearnScreen('topic');
+    setLearnTab('overview');
+  }
+
+  function handleOpenPrimaryNav(target: 'learn' | 'practice' | 'progress') {
+    if (target === 'learn') {
+      handleOpenLearnHome();
+      return;
+    }
+
+    if (target === 'practice') {
+      setActiveView('drills');
+      return;
+    }
+
+    setActiveView('progress');
+    setProgressTab('overview');
   }
 
   function handleSelectDrill(id: string) {
@@ -391,46 +465,87 @@ export function App() {
             <GraduationCap aria-hidden="true" size={24} />
           </div>
           <div>
-            <p className="eyebrow">Interview prep topics</p>
             <h1>My Learning Playground</h1>
           </div>
         </div>
 
-        <nav className="nav-list" aria-label="Primary">
-          {views.map((view) => (
-            <button
-              className={activeView === view.id ? 'nav-item active' : 'nav-item'}
-              key={view.id}
-              onClick={() => setActiveView(view.id)}
-              type="button"
-            >
-              {view.label}
-            </button>
-          ))}
+        <nav className="nav-list nav-list-primary" aria-label="Primary">
+          <button className={primaryNav === 'learn' ? 'nav-item active' : 'nav-item'} onClick={() => handleOpenPrimaryNav('learn')} type="button">
+            <House aria-hidden="true" size={16} />
+            Learn
+          </button>
+          <button className={primaryNav === 'practice' ? 'nav-item active' : 'nav-item'} onClick={() => handleOpenPrimaryNav('practice')} type="button">
+            <Code2 aria-hidden="true" size={16} />
+            Practice
+          </button>
+          <button className={primaryNav === 'progress' ? 'nav-item active' : 'nav-item'} onClick={() => handleOpenPrimaryNav('progress')} type="button">
+            <ClipboardList aria-hidden="true" size={16} />
+            Progress
+          </button>
         </nav>
 
-        <div className="sidebar-summary">
-          <span>{completedCount} of {topics.length} lessons complete</span>
-          <strong>{exerciseResponses.length} exercise responses</strong>
-          <small>{attempts.length} quiz attempts / {drillAttempts.length} drill attempts / {mockAttempts.length} mock interviews</small>
+        <div className="sidebar-divider" />
+
+        <nav className="nav-list nav-list-secondary" aria-label="Workspace shortcuts">
+          <button className={activeView === 'learn' && learnScreen === 'topic' ? 'nav-item active' : 'nav-item'} onClick={() => handleOpenTopic(activeTopic.id)} type="button">
+            <ListTodo aria-hidden="true" size={16} />
+            All topics
+          </button>
+          <button className={activeView === 'progress' && progressTab === 'history' ? 'nav-item active' : 'nav-item'} onClick={() => {
+            setActiveView('progress');
+            setProgressTab('history');
+          }} type="button">
+            <NotebookPen aria-hidden="true" size={16} />
+            Notes
+          </button>
+          <button className={activeView === 'exercises' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveView('exercises')} type="button">
+            <Bookmark aria-hidden="true" size={16} />
+            Bookmarks
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button className="nav-item nav-item-subtle" type="button">
+            <Settings2 aria-hidden="true" size={16} />
+            Settings
+          </button>
+          <div className="mode-stack">
+            <button className={colorMode === 'light' ? 'nav-item active' : 'nav-item'} onClick={() => setColorMode('light')} type="button">
+              Light
+            </button>
+            <button className={colorMode === 'dark' ? 'nav-item active' : 'nav-item'} onClick={() => setColorMode('dark')} type="button">
+              Dark
+            </button>
+          </div>
+          <div className="sidebar-summary">
+            <small><span aria-hidden="true">•</span> Local-first. All data stays on this device.</small>
+          </div>
         </div>
       </aside>
 
       <section className="workspace">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">JavaScript, CRUD, simple system design</p>
-            <h2>{views.find((view) => view.id === activeView)?.label}</h2>
+          <div className="topbar-copy">
+            {activeView === 'learn' && learnScreen === 'home' ? (
+              <>
+                <h2>Good morning</h2>
+                <p className="topbar-summary">What will you learn today?</p>
+              </>
+            ) : activeView === 'learn' ? (
+              <>
+                <p className="breadcrumb">Learn &gt; {activeTopic.category} &gt; {activeTopic.title}</p>
+                <h2>{activeTopic.title}</h2>
+                <p className="topbar-summary">{activeTopic.basicExplanation}</p>
+              </>
+            ) : (
+              <>
+                <p className="eyebrow">JavaScript, CRUD, simple system design</p>
+                <h2>{isPracticeView ? 'Practice' : activeViewMeta.label}</h2>
+                <p className="topbar-summary">{viewDescriptions[activeView]}</p>
+              </>
+            )}
           </div>
           <div className="toolbar">
-            <div className="mode-switch" aria-label="Color mode">
-              <button className={colorMode === 'light' ? 'active' : ''} onClick={() => setColorMode('light')} type="button">
-                Light
-              </button>
-              <button className={colorMode === 'dark' ? 'active' : ''} onClick={() => setColorMode('dark')} type="button">
-                Dark
-              </button>
-            </div>
             <button className="icon-button" onClick={handleExport} title="Export local data" type="button">
               <Download aria-hidden="true" size={18} />
             </button>
@@ -445,14 +560,65 @@ export function App() {
         </header>
         {importMessage && <p className="inline-message">{importMessage}</p>}
 
-        {activeView === 'learn' && (
-          <section className="two-column">
+        {activeView === 'learn' && learnScreen === 'home' && (
+          <section className="learn-home">
+            <section className="home-section">
+              <div className="section-heading">
+                <div>
+                  <p className="section-label">Continue learning</p>
+                  <h3>{activeTopic.category === 'JavaScript' ? 'JavaScript Essentials' : activeTopic.category}</h3>
+                </div>
+              </div>
+              <article className="continue-card">
+                <div className="continue-mark">{activeTopic.category === 'JavaScript' ? 'JS' : activeTopic.category[0]}</div>
+                <div className="continue-copy">
+                  <span>{activeTopic.category === 'JavaScript' ? 'JavaScript Essentials' : activeTopic.category}</span>
+                  <strong>{activeTopic.title}</strong>
+                  <div className="progress-line">
+                    <div
+                      className="progress-line-fill"
+                      style={{ width: `${currentTopicProgress === 'completed' ? 100 : currentTopicProgress === 'in_progress' ? 60 : 24}%` }}
+                    />
+                  </div>
+                </div>
+                <small>{currentTopicProgress === 'completed' ? '100% complete' : currentTopicProgress === 'in_progress' ? '60% complete' : '24% complete'}</small>
+                <button className="primary-button" onClick={() => handleOpenTopic(activeTopic.id)} type="button">
+                  Continue
+                </button>
+              </article>
+            </section>
+
+            <section className="home-section">
+              <div className="section-heading">
+                <div>
+                  <p className="section-label">Pick up a topic</p>
+                  <h3>Start with a clear area of practice</h3>
+                </div>
+              </div>
+              <div className="topic-grid">
+                {topicGroups.map((group) => {
+                  const firstTopic = topics.find((topic) => topic.category === group.category) ?? topics[0];
+                  return (
+                    <button className="topic-tile" key={group.category} onClick={() => handleOpenTopic(firstTopic.id)} type="button">
+                      <div className="topic-tile-mark">{group.category === 'JavaScript' ? 'JS' : group.category[0]}</div>
+                      <strong>{group.title}</strong>
+                      <small>{group.count} topics</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </section>
+        )}
+
+        {activeView === 'learn' && learnScreen === 'topic' && (
+          <section className="two-column topic-screen">
             <div className="panel-list">
               {topics.map((topic) => (
                 <button
                   className={activeTopic.id === topic.id ? 'list-card active' : 'list-card'}
                   key={topic.id}
-                  onClick={() => setActiveTopicId(topic.id)}
+                  onClick={() => handleOpenTopic(topic.id)}
                   type="button"
                 >
                   <span>Topic {topic.order} / {topic.category}</span>
@@ -470,31 +636,87 @@ export function App() {
                   <h3>{activeTopic.title}</h3>
                 </div>
               </div>
-              <section className="learning-section">
-                <p className="section-label">Broad explanation</p>
-                <p>{activeTopic.basicExplanation}</p>
-              </section>
-              <section className="learning-section">
-                <p className="section-label">More specific</p>
-                <p>{activeTopic.lesson}</p>
-                <ul className="deep-dive-list">
-                  {activeTopic.deepDive.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </section>
-              <section className="mental-grid">
-                {Object.entries(activeTopic.mentalModel).map(([label, value]) => (
-                  <div className="mini-panel" key={label}>
-                    <strong>{label.replace(/([A-Z])/g, ' $1')}</strong>
-                    <span>{value}</span>
-                  </div>
-                ))}
-              </section>
-              <div className="callout">
-                <strong>Checkpoint</strong>
-                <span>{activeTopic.checkpoint}</span>
+              <div className="tab-row">
+                <button className={learnTab === 'overview' ? 'tab-button active' : 'tab-button'} onClick={() => setLearnTab('overview')} type="button">
+                  Overview
+                </button>
+                <button className={learnTab === 'breakdown' ? 'tab-button active' : 'tab-button'} onClick={() => setLearnTab('breakdown')} type="button">
+                  Breakdown
+                </button>
+                <button className={learnTab === 'mental' ? 'tab-button active' : 'tab-button'} onClick={() => setLearnTab('mental')} type="button">
+                  Mental Model
+                </button>
+                <button className={learnTab === 'practice' ? 'tab-button active' : 'tab-button'} onClick={() => setLearnTab('practice')} type="button">
+                  Practice
+                </button>
               </div>
+              {learnTab === 'overview' && (
+                <section className="topic-layout">
+                  <div className="mini-panel">
+                    <strong>At a glance</strong>
+                    <p>{activeTopic.basicExplanation}</p>
+                  </div>
+                  <pre className="code-block topic-snippet">
+                    <code>{activeDrill.starterCode}</code>
+                  </pre>
+                  <div className="mini-panel">
+                    <strong>In this topic</strong>
+                    <ul>
+                      {activeTopic.deepDive.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mini-panel">
+                    <strong>Why it matters</strong>
+                    <ul>
+                      {activeTopic.deepDive.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="callout checkpoint-card">
+                    <strong>Checkpoint</strong>
+                    <span>{activeTopic.checkpoint}</span>
+                    <button className="secondary-button" onClick={() => handleLaunchTopicQuiz(activeTopic.id)} type="button">
+                      Start checkpoint
+                    </button>
+                  </div>
+                </section>
+              )}
+              {learnTab === 'breakdown' && (
+                <section className="learning-section">
+                  <p className="section-label">Breakdown</p>
+                  <p>{activeTopic.lesson}</p>
+                  <ul className="deep-dive-list">
+                    {activeTopic.deepDive.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {learnTab === 'mental' && (
+                <section className="mental-grid">
+                  {Object.entries(activeTopic.mentalModel).map(([label, value]) => (
+                    <div className="mini-panel" key={label}>
+                      <strong>{label.replace(/([A-Z])/g, ' $1')}</strong>
+                      <span>{value}</span>
+                    </div>
+                  ))}
+                </section>
+              )}
+              {learnTab === 'practice' && (
+                <RelatedPractice
+                  challenges={activeTopicChallenges}
+                  drills={activeTopicDrills}
+                  exercises={activeTopicExercises}
+                  onOpenChallenge={handleLaunchChallenge}
+                  onOpenDrill={handleLaunchDrill}
+                  onOpenExercise={handleLaunchExercise}
+                  onOpenQuiz={() => handleLaunchTopicQuiz(activeTopic.id)}
+                  questionCount={activeTopicQuestions.length}
+                />
+              )}
               <div className="status-row">
                 {(['not_started', 'in_progress', 'completed'] as ProgressStatus[]).map((status) => (
                   <button
@@ -507,16 +729,6 @@ export function App() {
                   </button>
                 ))}
               </div>
-              <RelatedPractice
-                challenges={activeTopicChallenges}
-                drills={activeTopicDrills}
-                exercises={activeTopicExercises}
-                onOpenChallenge={handleLaunchChallenge}
-                onOpenDrill={handleLaunchDrill}
-                onOpenExercise={handleLaunchExercise}
-                onOpenQuiz={() => handleLaunchTopicQuiz(activeTopic.id)}
-                questionCount={activeTopicQuestions.length}
-              />
               <NoteComposer
                 buttonLabel="Save topic note"
                 draft={noteDraft}
@@ -580,7 +792,7 @@ export function App() {
         )}
 
         {activeView === 'drills' && (
-          <section className="two-column">
+          <section className="two-column practice-screen">
             <div className="panel-list">
               <div className="filter-row">
                 <select onChange={(event) => setDrillTopicFilter(event.target.value)} value={drillTopicFilter}>
@@ -878,57 +1090,85 @@ export function App() {
 
         {activeView === 'progress' && (
           <section className="progress-grid">
-            <Metric icon={<ClipboardList aria-hidden="true" size={21} />} label="Lessons complete" value={`${completedCount}/${topics.length}`} />
-            <Metric icon={<CheckCircle2 aria-hidden="true" size={21} />} label="Average quiz score" value={`${averageScore}%`} />
-            <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Code drill attempts" value={String(drillAttempts.length)} />
-            <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Exercise responses" value={String(exerciseResponses.length)} />
-            <Metric icon={<Play aria-hidden="true" size={21} />} label="Mock interviews" value={String(mockAttempts.length)} />
-            <HistoryPanel title="Quiz history" empty="No quiz attempts yet.">
-              {attempts.map((attempt) => (
-                <div className="history-row" key={attempt.id}>
-                  <span>{formatDate(attempt.createdAt)}</span>
-                  <strong>{attempt.score}/{attempt.total}</strong>
-                </div>
-              ))}
-            </HistoryPanel>
-            <HistoryPanel title="Saved notes" empty="No notes saved yet.">
-              {notes.map((note) => (
-                <article className="note-card" key={note.id}>
-                  <p>{note.body}</p>
-                  <div>
-                    <span>{note.targetType} / {formatDate(note.createdAt)}</span>
-                    <button className="text-button" onClick={() => handleDeleteNote(note.id)} type="button">
-                      <Trash2 aria-hidden="true" size={15} />
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </HistoryPanel>
-            <HistoryPanel title="Exercise responses" empty="No exercise responses yet.">
-              {exerciseResponses.map((response) => (
-                <div className="history-row" key={response.id}>
-                  <span>{exercises.find((exercise) => exercise.id === response.exerciseId)?.title ?? response.exerciseId}</span>
-                  <strong>{getChecklistScore(response.checklist)}%</strong>
-                </div>
-              ))}
-            </HistoryPanel>
-            <HistoryPanel title="Code drill attempts" empty="No code drills saved yet.">
-              {drillAttempts.map((attempt) => (
-                <div className="history-row" key={attempt.id}>
-                  <span>{codeDrills.find((drill) => drill.id === attempt.drillId)?.title ?? attempt.drillId}</span>
-                  <strong>{attempt.completed ? 'Done' : attempt.confidence}</strong>
-                </div>
-              ))}
-            </HistoryPanel>
-            <HistoryPanel title="Mock interview history" empty="No mock interviews saved yet.">
-              {mockAttempts.map((attempt) => (
-                <div className="history-row" key={attempt.id}>
-                  <span>{formatDate(attempt.createdAt)}</span>
-                  <strong>{attempt.notes.length} chars</strong>
-                </div>
-              ))}
-            </HistoryPanel>
+            <div className="tab-row progress-tabs">
+              <button className={progressTab === 'overview' ? 'tab-button active' : 'tab-button'} onClick={() => setProgressTab('overview')} type="button">
+                Overview
+              </button>
+              <button className={progressTab === 'history' ? 'tab-button active' : 'tab-button'} onClick={() => setProgressTab('history')} type="button">
+                History
+              </button>
+            </div>
+            {progressTab === 'overview' ? (
+              <>
+                <Metric icon={<ClipboardList aria-hidden="true" size={21} />} label="Topics started" value={String(topics.length - topics.filter((topic) => progress[topic.id] === 'not_started').length)} />
+                <Metric icon={<CheckCircle2 aria-hidden="true" size={21} />} label="Topics completed" value={String(completedCount)} />
+                <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Average quiz score" value={`${averageScore}%`} />
+                <Metric icon={<Play aria-hidden="true" size={21} />} label="Mock interviews" value={String(mockAttempts.length)} />
+                <HistoryPanel title="Recent activity" empty="No saved work yet.">
+                  {notes.slice(0, 4).map((note) => (
+                    <article className="note-card" key={note.id}>
+                      <p>{note.body}</p>
+                      <div>
+                        <span>{note.targetType} / {formatDate(note.createdAt)}</span>
+                        <button className="text-button" onClick={() => handleDeleteNote(note.id)} type="button">
+                          <Trash2 aria-hidden="true" size={15} />
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </HistoryPanel>
+                <HistoryPanel title="Continue where you left off" empty="No exercise responses yet.">
+                  {exerciseResponses.slice(0, 4).map((response) => (
+                    <div className="history-row" key={response.id}>
+                      <span>{exercises.find((exercise) => exercise.id === response.exerciseId)?.title ?? response.exerciseId}</span>
+                      <strong>{getChecklistScore(response.checklist)}%</strong>
+                    </div>
+                  ))}
+                </HistoryPanel>
+              </>
+            ) : (
+              <>
+                <HistoryPanel title="Quiz history" empty="No quiz attempts yet.">
+                  {attempts.map((attempt) => (
+                    <div className="history-row" key={attempt.id}>
+                      <span>{formatDate(attempt.createdAt)}</span>
+                      <strong>{attempt.score}/{attempt.total}</strong>
+                    </div>
+                  ))}
+                </HistoryPanel>
+                <HistoryPanel title="Saved notes" empty="No notes saved yet.">
+                  {notes.map((note) => (
+                    <article className="note-card" key={note.id}>
+                      <p>{note.body}</p>
+                      <div>
+                        <span>{note.targetType} / {formatDate(note.createdAt)}</span>
+                        <button className="text-button" onClick={() => handleDeleteNote(note.id)} type="button">
+                          <Trash2 aria-hidden="true" size={15} />
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </HistoryPanel>
+                <HistoryPanel title="Code drill attempts" empty="No code drills saved yet.">
+                  {drillAttempts.map((attempt) => (
+                    <div className="history-row" key={attempt.id}>
+                      <span>{codeDrills.find((drill) => drill.id === attempt.drillId)?.title ?? attempt.drillId}</span>
+                      <strong>{attempt.completed ? 'Done' : attempt.confidence}</strong>
+                    </div>
+                  ))}
+                </HistoryPanel>
+                <HistoryPanel title="Mock interview history" empty="No mock interviews saved yet.">
+                  {mockAttempts.map((attempt) => (
+                    <div className="history-row" key={attempt.id}>
+                      <span>{formatDate(attempt.createdAt)}</span>
+                      <strong>{attempt.notes.length} chars</strong>
+                    </div>
+                  ))}
+                </HistoryPanel>
+              </>
+            )}
           </section>
         )}
       </section>
