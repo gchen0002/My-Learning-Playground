@@ -75,6 +75,16 @@ type View = 'learn' | 'quiz' | 'drills' | 'exercises' | 'design' | 'mock' | 'pro
 type LearnScreen = 'home' | 'topic';
 type LearnTab = 'overview' | 'breakdown' | 'mental' | 'practice';
 type ProgressTab = 'overview' | 'history';
+type RouteState = {
+  activeView: View;
+  learnScreen: LearnScreen;
+  progressTab: ProgressTab;
+  activeTopicId: string;
+  activeDrillId: string;
+  activeExerciseId: string;
+  activeChallengeId: string;
+  quizTopicId: string | null;
+};
 
 const views: { id: View; label: string }[] = [
   { id: 'learn', label: 'Learn' },
@@ -153,18 +163,178 @@ function refreshLocalState() {
   };
 }
 
+function getBasePath() {
+  if (window.location.pathname.startsWith('/My-Learning-Playground')) {
+    return '/My-Learning-Playground';
+  }
+
+  return window.location.hostname.endsWith('github.io') ? '/My-Learning-Playground' : '';
+}
+
+function normalizeRoutePath(pathname = window.location.pathname) {
+  const basePath = getBasePath();
+  const withoutBase = basePath && pathname.startsWith(basePath) ? pathname.slice(basePath.length) : pathname;
+  const routePath = withoutBase.replace(/\/$/, '');
+  return routePath || '/';
+}
+
+function routePathWithBase(routePath: string) {
+  return `${getBasePath()}${routePath === '/' ? '' : routePath}` || '/';
+}
+
+function findValidId<T extends { id: string }>(items: T[], requestedId: string | undefined, fallbackId: string) {
+  return requestedId && items.some((item) => item.id === requestedId) ? requestedId : fallbackId;
+}
+
+function parseRoute(pathname = window.location.pathname): RouteState {
+  const [section, itemId, extra] = normalizeRoutePath(pathname).split('/').filter(Boolean);
+
+  if (!section || section === 'learn') {
+    const activeTopicId = findValidId(topics, section === 'learn' ? itemId : undefined, topics[0].id);
+    return {
+      activeView: 'learn',
+      learnScreen: section === 'learn' && itemId ? 'topic' : 'home',
+      progressTab: 'overview',
+      activeTopicId,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'quiz') {
+    const topicId = topics.some((topic) => topic.id === itemId) ? itemId : null;
+    return {
+      activeView: 'quiz',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topicId ?? topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      quizTopicId: topicId,
+    };
+  }
+
+  if (section === 'code-drills' || section === 'drills') {
+    return {
+      activeView: 'drills',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: findValidId(codeDrills, itemId, codeDrills[0].id),
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'exercises') {
+    return {
+      activeView: 'exercises',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: findValidId(exercises, itemId, exercises[0].id),
+      activeChallengeId: challenges[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'design') {
+    return {
+      activeView: 'design',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: findValidId(challenges, itemId, challenges[0].id),
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'mock') {
+    return {
+      activeView: 'mock',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'progress') {
+    return {
+      activeView: 'progress',
+      learnScreen: 'home',
+      progressTab: itemId === 'history' || extra === 'history' ? 'history' : 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  return parseRoute('/');
+}
+
+function buildRoutePath({
+  activeChallengeId,
+  activeDrillId,
+  activeExerciseId,
+  activeTopicId,
+  activeView,
+  learnScreen,
+  progressTab,
+  quizTopicId,
+}: RouteState) {
+  if (activeView === 'learn') {
+    return learnScreen === 'topic' ? `/learn/${activeTopicId}` : '/';
+  }
+
+  if (activeView === 'quiz') {
+    return quizTopicId ? `/quiz/${quizTopicId}` : '/quiz';
+  }
+
+  if (activeView === 'drills') {
+    return `/code-drills/${activeDrillId}`;
+  }
+
+  if (activeView === 'exercises') {
+    return `/exercises/${activeExerciseId}`;
+  }
+
+  if (activeView === 'design') {
+    return `/design/${activeChallengeId}`;
+  }
+
+  if (activeView === 'mock') {
+    return '/mock';
+  }
+
+  return progressTab === 'history' ? '/progress/history' : '/progress';
+}
+
 export function App() {
+  const initialRoute = parseRoute();
   const [colorMode, setColorMode] = useState<ColorMode>(() => {
     return window.localStorage.getItem(colorModeKey) === 'dark' ? 'dark' : 'light';
   });
-  const [activeView, setActiveView] = useState<View>('learn');
-  const [learnScreen, setLearnScreen] = useState<LearnScreen>('home');
+  const [activeView, setActiveView] = useState<View>(initialRoute.activeView);
+  const [learnScreen, setLearnScreen] = useState<LearnScreen>(initialRoute.learnScreen);
   const [learnTab, setLearnTab] = useState<LearnTab>('overview');
-  const [progressTab, setProgressTab] = useState<ProgressTab>('overview');
-  const [activeTopicId, setActiveTopicId] = useState(topics[0].id);
-  const [activeDrillId, setActiveDrillId] = useState(codeDrills[0].id);
-  const [activeExerciseId, setActiveExerciseId] = useState(exercises[0].id);
-  const [activeChallengeId, setActiveChallengeId] = useState(challenges[0].id);
+  const [progressTab, setProgressTab] = useState<ProgressTab>(initialRoute.progressTab);
+  const [activeTopicId, setActiveTopicId] = useState(initialRoute.activeTopicId);
+  const [activeDrillId, setActiveDrillId] = useState(initialRoute.activeDrillId);
+  const [activeExerciseId, setActiveExerciseId] = useState(initialRoute.activeExerciseId);
+  const [activeChallengeId, setActiveChallengeId] = useState(initialRoute.activeChallengeId);
   const [categoryFilter, setCategoryFilter] = useState<LearningCategory | 'All'>('All');
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | 'All'>('All');
   const [drillTopicFilter, setDrillTopicFilter] = useState<string | 'All'>('All');
@@ -177,12 +347,14 @@ export function App() {
   const [mockAttempts, setMockAttempts] = useState<MockInterviewAttempt[]>(() => getMockInterviewAttempts());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [latestAttempt, setLatestAttempt] = useState<QuizAttempt | null>(null);
-  const [quizTopicId, setQuizTopicId] = useState<string | null>(null);
+  const [quizTopicId, setQuizTopicId] = useState<string | null>(initialRoute.quizTopicId);
   const [noteDraft, setNoteDraft] = useState('');
   const [exerciseSections, setExerciseSections] = useState(emptyExerciseSections);
   const [exerciseChecklist, setExerciseChecklist] = useState<ChecklistResult>({});
   const [showExerciseAnswer, setShowExerciseAnswer] = useState(false);
-  const [drillDraft, setDrillDraft] = useState(() => getEmptyDrillDraft());
+  const [drillDraft, setDrillDraft] = useState(() => {
+    return getEmptyDrillDraft(codeDrills.find((drill) => drill.id === initialRoute.activeDrillId));
+  });
   const [showDrillSolution, setShowDrillSolution] = useState(false);
   const [designSections, setDesignSections] = useState(emptyDesignSections);
   const [showDesignAnswer, setShowDesignAnswer] = useState(false);
@@ -457,6 +629,59 @@ export function App() {
     setImportMessage('');
   }
 
+  function applyRoute(route: RouteState) {
+    setActiveView(route.activeView);
+    setLearnScreen(route.learnScreen);
+    setProgressTab(route.progressTab);
+    setActiveTopicId(route.activeTopicId);
+    setQuizTopicId(route.quizTopicId);
+
+    if (route.activeView === 'drills') {
+      handleSelectDrill(route.activeDrillId);
+    } else {
+      setActiveDrillId(route.activeDrillId);
+    }
+
+    if (route.activeView === 'exercises') {
+      handleSelectExercise(route.activeExerciseId);
+    } else {
+      setActiveExerciseId(route.activeExerciseId);
+    }
+
+    if (route.activeView === 'design') {
+      handleSelectChallenge(route.activeChallengeId);
+    } else {
+      setActiveChallengeId(route.activeChallengeId);
+    }
+  }
+
+  useEffect(() => {
+    function handlePopState() {
+      applyRoute(parseRoute());
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  });
+
+  useEffect(() => {
+    const routePath = buildRoutePath({
+      activeChallengeId,
+      activeDrillId,
+      activeExerciseId,
+      activeTopicId,
+      activeView,
+      learnScreen,
+      progressTab,
+      quizTopicId,
+    });
+    const currentPath = normalizeRoutePath();
+
+    if (currentPath !== routePath) {
+      window.history.pushState(null, '', routePathWithBase(routePath));
+    }
+  }, [activeChallengeId, activeDrillId, activeExerciseId, activeTopicId, activeView, learnScreen, progressTab, quizTopicId]);
+
   return (
     <main className={`app-shell mode-${colorMode}`}>
       <aside className="sidebar">
@@ -533,7 +758,13 @@ export function App() {
               </>
             ) : activeView === 'learn' ? (
               <>
-                <p className="breadcrumb">Learn &gt; {activeTopic.category} &gt; {activeTopic.title}</p>
+                <nav className="breadcrumb" aria-label="Breadcrumb">
+                  <button onClick={handleOpenLearnHome} type="button">Learn</button>
+                  <span aria-hidden="true">&gt;</span>
+                  <button onClick={() => handleOpenTopic(activeTopic.id)} type="button">{activeTopic.category}</button>
+                  <span aria-hidden="true">&gt;</span>
+                  <button onClick={() => handleOpenTopic(activeTopic.id)} type="button">{activeTopic.title}</button>
+                </nav>
                 <h2>{activeTopic.title}</h2>
                 <p className="topbar-summary">{activeTopic.basicExplanation}</p>
               </>

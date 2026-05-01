@@ -365,9 +365,26 @@ h3 {
 }
 
 .breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
   margin: 0 0 8px;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.breadcrumb button {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+
+.breadcrumb button:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .learn-home {

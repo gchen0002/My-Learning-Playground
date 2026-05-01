@@ -7,13 +7,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        404: '404.html',
         app: 'src/main.tsx',
         index: 'index.html',
       },
       output: {
         assetFileNames: 'assets/[name][extname]',
         chunkFileNames: 'assets/[name].js',
-        entryFileNames: 'assets/app.js',
+        entryFileNames: 'assets/site.js',
       },
     },
   },
