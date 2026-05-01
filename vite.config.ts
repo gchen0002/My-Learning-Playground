@@ -2,8 +2,27 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  appType: 'spa',
   base: '/My-Learning-Playground/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'local-clean-url-fallback',
+      configureServer(server) {
+        server.middlewares.use((request, _response, next) => {
+          const url = request.url ?? '/';
+          const acceptsHtml = request.headers.accept?.includes('text/html');
+          const isAsset = url.includes('.') || url.startsWith('/@') || url.startsWith('/src/');
+
+          if (request.method === 'GET' && acceptsHtml && !isAsset) {
+            request.url = '/My-Learning-Playground/';
+          }
+
+          next();
+        });
+      },
+    },
+  ],
   build: {
     rollupOptions: {
       input: {
