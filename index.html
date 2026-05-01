@@ -12,6 +12,42 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      const isGitHubPages = window.location.hostname.endsWith('github.io');
+      const basePath = isGitHubPages ? '/My-Learning-Playground/' : '/';
+
+      function loadBuiltApp() {
+        const stylesheet = document.createElement('link');
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = `${basePath}assets/app.css`;
+        document.head.appendChild(stylesheet);
+
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = `${basePath}assets/app.js`;
+        document.body.appendChild(script);
+      }
+
+      function loadDevApp() {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = '/src/main.tsx';
+        document.body.appendChild(script);
+      }
+
+      if (isGitHubPages) {
+        loadBuiltApp();
+      } else {
+        fetch('/src/main.tsx', { method: 'HEAD' })
+          .then((response) => {
+            if (response.ok) {
+              loadDevApp();
+            } else {
+              loadBuiltApp();
+            }
+          })
+          .catch(loadBuiltApp);
+      }
+    </script>
   </body>
 </html>
