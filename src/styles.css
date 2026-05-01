@@ -120,10 +120,14 @@ strong {
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   gap: 26px;
+  height: 100vh;
   min-height: 100vh;
+  overflow-y: auto;
   padding: 26px 22px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border-right: 1px solid var(--line);
@@ -260,9 +264,13 @@ h3 {
 }
 
 .sidebar-footer {
+  position: sticky;
+  bottom: 0;
   display: grid;
   gap: 8px;
   margin-top: auto;
+  padding-top: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
 }
 
 .mode-stack {
@@ -1151,7 +1159,10 @@ select {
   }
 
   .sidebar {
+    position: static;
+    height: auto;
     min-height: auto;
+    overflow: visible;
     padding: 20px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
