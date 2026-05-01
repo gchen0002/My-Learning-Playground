@@ -712,7 +712,7 @@ export function App() {
         <div className="sidebar-divider" />
 
         <nav className="nav-list nav-list-secondary" aria-label="Workspace shortcuts">
-          <button className={activeView === 'learn' && learnScreen === 'topic' ? 'nav-item active' : 'nav-item'} onClick={() => handleOpenTopic(activeTopic.id)} type="button">
+          <button className={activeView === 'learn' && learnScreen === 'home' ? 'nav-item active' : 'nav-item'} onClick={handleOpenLearnHome} type="button">
             <ListTodo aria-hidden="true" size={16} />
             All topics
           </button>

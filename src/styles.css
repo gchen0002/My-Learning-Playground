@@ -375,10 +375,14 @@ h3 {
 }
 
 .breadcrumb button {
+  appearance: none;
+  font: inherit;
   padding: 0;
   color: inherit;
   background: transparent;
   border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .breadcrumb button:hover {
