@@ -548,6 +548,12 @@ h3 {
   margin-bottom: 4px;
 }
 
+.practice-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
 .two-column {
   display: grid;
   grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
@@ -1057,6 +1063,66 @@ select {
   margin: 0;
 }
 
+.answer-section span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.guided-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-list {
+  display: grid;
+  gap: 6px;
+  padding-left: 18px;
+  margin: 0;
+  color: var(--muted-strong);
+  line-height: 1.6;
+}
+
+.practice-plan-list {
+  display: grid;
+  gap: 10px;
+}
+
+.practice-plan-row {
+  display: grid;
+  grid-template-columns: auto 58px minmax(120px, 0.7fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.practice-plan-checklist {
+  grid-column: 4;
+}
+
+.practice-plan-row input {
+  accent-color: var(--accent);
+}
+
+.practice-plan-row span {
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.practice-plan-row small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .checklist-box {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1195,6 +1261,18 @@ select {
   .choice-grid,
   .checklist-box {
     grid-template-columns: 1fr;
+  }
+
+  .practice-plan-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .practice-plan-row small {
+    grid-column: 2;
+  }
+
+  .practice-plan-checklist {
+    grid-column: 2;
   }
 
   .topbar {

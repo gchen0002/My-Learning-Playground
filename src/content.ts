@@ -93,13 +93,46 @@ export type CodeDrill = {
   explanation: string;
 };
 
+export type GuidedPrompt = {
+  id: string;
+  title: string;
+  group: 'Project Stories' | 'Build Walkthroughs' | 'Design Thinking' | 'Stack Translation';
+  prompt: string;
+  guidance: string[];
+  exampleShape: string[];
+};
+
+export type ProjectStoryCard = {
+  id: string;
+  title: string;
+  focus: string;
+  talkingPoints: string[];
+  improvementPrompt: string;
+};
+
+export type StackTranslationExercise = {
+  id: string;
+  title: string;
+  localFeature: string;
+  targetShape: string;
+  questions: string[];
+};
+
+export type PracticePlanTask = {
+  id: string;
+  day: number;
+  title: string;
+  focus: string;
+  checklist: string[];
+};
+
 export const topics: Topic[] = [
   {
     id: 'arrays-objects',
     title: 'Arrays and Objects',
     category: 'JavaScript',
     order: 1,
-    summary: 'Practice the data structures most JS interview tasks use.',
+    summary: 'Practice the data structures most JavaScript tasks use.',
     basicExplanation:
       'Arrays and objects are the everyday containers of JavaScript. Arrays are best when order matters, and objects are best when you want to name or look up values by a key.',
     lesson:
@@ -107,7 +140,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Use arrays when you need to preserve order, scan every item, sort values, or render a list.',
       'Use objects or Maps when you need fast lookup by ID, grouping, counting, or deduping.',
-      'In interviews, say the shape out loud: "I will use an object keyed by ID so updates are direct instead of scanning the array."',
+      'When explaining your approach, say the shape out loud: "I will use an object keyed by ID so updates are direct instead of scanning the array."',
     ],
     checkpoint: 'Before coding, say whether the problem needs ordering, lookup by key, or both.',
     mentalModel: {
@@ -130,7 +163,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Use await when one step depends on the previous result.',
       'Use Promise.all when independent requests can run at the same time.',
-      'In interviews, mention loading, success, and error states because async code affects what the user sees.',
+      'When explaining async code, mention loading, success, and error states because async work affects what the user sees.',
     ],
     checkpoint: 'Name which work must happen in order and which work can happen in parallel.',
     mentalModel: {
@@ -176,7 +209,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Start with nouns from the prompt: user, note, quiz attempt, flashcard, bookmark.',
       'Give each stored record an ID so it can be read, updated, deleted, or linked from another record.',
-      'In interviews, separate stored fields from derived values like counts, filtered lists, and percentages.',
+      'When explaining data shape, separate stored fields from derived values like counts, filtered lists, and percentages.',
     ],
     checkpoint: 'Write the entity first, then sketch the screens and actions that use it.',
     mentalModel: {
@@ -195,7 +228,7 @@ export const topics: Topic[] = [
     basicExplanation:
       'State is what the app remembers right now. Validation is how the app decides whether user input is safe and complete enough to save.',
     lesson:
-      'Good implementation design separates raw input, validated data, saved records, and derived UI state. This makes edge cases easier to reason about in interviews.',
+      'Good implementation design separates raw input, validated data, saved records, and derived UI state. This makes edge cases easier to reason about while building.',
     deepDive: [
       'Keep draft form state separate from saved records so cancel/reset behavior is clear.',
       'Validate before saving, then show useful feedback when input is blank, duplicated, or invalid.',
@@ -222,7 +255,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Think in inputs and outputs: what payload comes in, what result comes back, and what errors can happen.',
       'Keep business rules in service functions instead of scattering them through UI components.',
-      'In interviews, endpoint-style thinking helps you explain boundaries even if you are coding locally.',
+      'Endpoint-style thinking helps you explain boundaries even if you are coding locally.',
     ],
     checkpoint: 'Keep UI components focused on intent, and move data rules into service functions.',
     mentalModel: {
@@ -245,7 +278,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Functional requirements answer: what can users do?',
       'Non-functional requirements answer: how fast, reliable, secure, or scalable must it be?',
-      'In design interviews, requirements keep you from designing a system for the wrong problem.',
+      'Requirements keep you from designing a system for the wrong problem.',
     ],
     checkpoint: 'Before designing, ask what must happen and what qualities matter most.',
     mentalModel: {
@@ -268,7 +301,7 @@ export const topics: Topic[] = [
     deepDive: [
       'Local storage is simple because only one browser writes the data.',
       'A shared service must handle many users reading and writing at the same time.',
-      'In interviews, explain what moves from the client to the server and what new risks appear.',
+      'When explaining scale, say what moves from the client to the server and what new risks appear.',
     ],
     checkpoint: 'For every local feature, ask what changes when the data must be shared safely.',
     mentalModel: {
@@ -887,5 +920,226 @@ export const challenges: Challenge[] = [
       'POST /events creates events, POST /rsvps changes status, GET /events/:id shows capacity, workers send reminders or waitlist updates.',
       'Capacity updates can race, waitlist promotion needs ordering, cancellations must free seats, and notifications should not block RSVP writes.',
     ),
+  },
+];
+
+export const guidedPrompts: GuidedPrompt[] = [
+  {
+    id: 'walk-through-built-work',
+    title: 'Walk Through Something You Built',
+    group: 'Project Stories',
+    prompt: 'Pick one thing you built and explain what it does, why you built it, and what changed from the first version to the current version.',
+    guidance: ['Start with the user problem.', 'Name the parts you personally built.', 'Explain one tradeoff without over-explaining.'],
+    exampleShape: ['Problem: what was confusing or missing.', 'Build: the pieces you implemented.', 'Result: what became easier to use or understand.'],
+  },
+  {
+    id: 'technical-choice',
+    title: 'Explain a Technical Choice',
+    group: 'Build Walkthroughs',
+    prompt: 'Choose one tool, pattern, or structure in the app and explain why it fits this project.',
+    guidance: ['Compare it with one simpler or more complex option.', 'Connect the choice to maintainability.', 'Mention what would make you revisit the choice.'],
+    exampleShape: ['Choice: the tool or pattern.', 'Reason: what problem it solved.', 'Limit: when it might stop being enough.'],
+  },
+  {
+    id: 'hard-bug-story',
+    title: 'Describe a Hard Bug',
+    group: 'Project Stories',
+    prompt: 'Tell the story of a bug or visual issue you had to diagnose, including how you narrowed it down.',
+    guidance: ['Keep the timeline short.', 'Say what evidence changed your mind.', 'End with what you would check earlier next time.'],
+    exampleShape: ['Symptom: what looked wrong.', 'Investigation: what you inspected.', 'Fix: what changed and what you learned.'],
+  },
+  {
+    id: 'local-feature-to-api',
+    title: 'Turn a Local Feature Into an API',
+    group: 'Stack Translation',
+    prompt: 'Take one localStorage feature and describe the endpoints, data model, and validation it would need as a small service.',
+    guidance: ['Name the stored entity first.', 'List the read and write operations.', 'Add one validation rule and one failure case.'],
+    exampleShape: ['Entity: what gets stored.', 'Routes: how it is created, read, updated, or deleted.', 'Failure: what can go wrong.'],
+  },
+  {
+    id: 'what-to-improve-next',
+    title: 'What Would You Improve Next?',
+    group: 'Design Thinking',
+    prompt: 'Choose one improvement and explain why it matters more than two other possible improvements.',
+    guidance: ['Use user value as the main reason.', 'Mention the smallest useful version.', 'Call out what you would not build yet.'],
+    exampleShape: ['Next: one focused improvement.', 'Why: user or learning value.', 'Not yet: what stays out of scope.'],
+  },
+  {
+    id: 'remote-collaboration',
+    title: 'Explain How You Work',
+    group: 'Build Walkthroughs',
+    prompt: 'Describe how you would keep progress clear when working with someone else on this project remotely.',
+    guidance: ['Mention small updates and visible work.', 'Explain how you would avoid stepping on changes.', 'Connect communication to code quality.'],
+    exampleShape: ['Plan: agree on a slice.', 'Work: share progress and blockers.', 'Review: test and summarize the change.'],
+  },
+];
+
+export const projectStoryCards: ProjectStoryCard[] = [
+  {
+    id: 'local-first-storage',
+    title: 'Local-first storage',
+    focus: 'Saved notes, attempts, progress, and practice answers stay on the learner device.',
+    talkingPoints: ['Uses browser storage instead of a backend.', 'Keeps the prototype static-hostable.', 'Separates storage helpers from UI code.'],
+    improvementPrompt: 'How would this change if multiple devices needed to stay in sync?',
+  },
+  {
+    id: 'progress-tracking',
+    title: 'Progress tracking',
+    focus: 'The app records topic progress and saved practice work so a learner can return later.',
+    talkingPoints: ['Progress is simple enough to understand.', 'History views make saved work visible.', 'Export and import protect local data.'],
+    improvementPrompt: 'What extra signal would help the learner know what to practice next?',
+  },
+  {
+    id: 'static-deployment',
+    title: 'Static deployment',
+    focus: 'The app can run as a static Vite build with clean routes and copied assets.',
+    talkingPoints: ['No server is required for the current feature set.', 'Clean URLs make sharing pages easier.', 'Build output stays predictable.'],
+    improvementPrompt: 'What would need to move server-side if accounts or shared data were added?',
+  },
+  {
+    id: 'content-structure',
+    title: 'Content structure',
+    focus: 'Lessons, exercises, drills, and design prompts are hardcoded in a clear content module.',
+    talkingPoints: ['Content is easy to inspect and update.', 'Types keep each learning item consistent.', 'Practice links stay connected to topics.'],
+    improvementPrompt: 'When would hardcoded content become painful enough to migrate?',
+  },
+  {
+    id: 'quiet-interface',
+    title: 'Quiet interface',
+    focus: 'The visual direction stays simple so the learner can focus on practice.',
+    talkingPoints: ['Neutral colors reduce distraction.', 'Reusable panels keep the layout predictable.', 'Light and dark modes support different working preferences.'],
+    improvementPrompt: 'Which parts should stay minimal even as the app grows?',
+  },
+];
+
+export const stackTranslationExercises: StackTranslationExercise[] = [
+  {
+    id: 'notes-to-service',
+    title: 'Notes as a service',
+    localFeature: 'Topic and design notes saved in localStorage.',
+    targetShape: 'A small notes API with a notes table and user-owned records.',
+    questions: ['What fields belong on the note record?', 'Which endpoint creates a note?', 'What validation prevents empty notes?'],
+  },
+  {
+    id: 'progress-to-service',
+    title: 'Progress as records',
+    localFeature: 'A map of topic IDs to progress statuses.',
+    targetShape: 'A progress table keyed by learner and topic.',
+    questions: ['What should be unique in the table?', 'Should progress updates be PUT or PATCH?', 'How would you show the latest progress quickly?'],
+  },
+  {
+    id: 'searchable-content',
+    title: 'Searchable learning content',
+    localFeature: 'Hardcoded topics, drills, and prompts filtered in the browser.',
+    targetShape: 'A searchable index of titles, summaries, categories, and difficulty.',
+    questions: ['Which fields should be indexed?', 'What filters should be available?', 'How would stale indexed content be refreshed?'],
+  },
+  {
+    id: 'static-to-hosted',
+    title: 'Static app to hosted app',
+    localFeature: 'A static frontend with all data stored in the browser.',
+    targetShape: 'A frontend plus a small Node service, database, and deployment pipeline.',
+    questions: ['What can stay static?', 'What needs a server first?', 'What environment variables would the service need?'],
+  },
+];
+
+export const practicePlanTasks: PracticePlanTask[] = [
+  {
+    id: 'day-1-project-map',
+    day: 1,
+    title: 'Map the project',
+    focus: 'Write the short version of what this app does and who it helps.',
+    checklist: ['Name the learner problem.', 'Pick three features to show.', 'Write a 60-second walkthrough.'],
+  },
+  {
+    id: 'day-2-build-story',
+    day: 2,
+    title: 'Build story',
+    focus: 'Explain what changed from the rough version to the cleaner version.',
+    checklist: ['Name one visual improvement.', 'Name one code structure improvement.', 'Name one thing you intentionally did not add.'],
+  },
+  {
+    id: 'day-3-js-foundations',
+    day: 3,
+    title: 'JavaScript foundations',
+    focus: 'Practice explaining arrays, objects, async flow, and state changes.',
+    checklist: ['Answer one JavaScript prompt.', 'Trace one code drill.', 'Say the edge case out loud.'],
+  },
+  {
+    id: 'day-4-react-vite',
+    day: 4,
+    title: 'React and Vite choices',
+    focus: 'Explain component state, build tooling, and why the app can be static.',
+    checklist: ['Explain one state variable.', 'Explain the static build.', 'Name one tradeoff of a single-page app.'],
+  },
+  {
+    id: 'day-5-crud-flow',
+    day: 5,
+    title: 'CRUD flow',
+    focus: 'Turn local save/read/update/delete behavior into clear operations.',
+    checklist: ['Pick one saved data type.', 'Name the create/read/update/delete paths.', 'Add validation and an edge case.'],
+  },
+  {
+    id: 'day-6-data-shapes',
+    day: 6,
+    title: 'Data shapes',
+    focus: 'Practice describing entities, IDs, relationships, and history records.',
+    checklist: ['Draw one entity model in words.', 'Name the unique ID.', 'Explain one relationship.'],
+  },
+  {
+    id: 'day-7-api-shapes',
+    day: 7,
+    title: 'API shapes',
+    focus: 'Convert one local feature into endpoint-style thinking.',
+    checklist: ['Write three endpoint names.', 'Name request and response data.', 'Explain one failure response.'],
+  },
+  {
+    id: 'day-8-database-shapes',
+    day: 8,
+    title: 'Database shapes',
+    focus: 'Translate browser data into simple tables.',
+    checklist: ['Name two tables.', 'Name important columns.', 'Explain one index or lookup.'],
+  },
+  {
+    id: 'day-9-search-and-filter',
+    day: 9,
+    title: 'Search and filter',
+    focus: 'Explain how a learner could find content faster.',
+    checklist: ['Name searchable fields.', 'Explain client filtering.', 'Explain when an index would help.'],
+  },
+  {
+    id: 'day-10-debug-story',
+    day: 10,
+    title: 'Debug story',
+    focus: 'Prepare a clear story about diagnosing and fixing a problem.',
+    checklist: ['Describe the symptom.', 'Describe the investigation.', 'Describe the fix and lesson.'],
+  },
+  {
+    id: 'day-11-tradeoffs',
+    day: 11,
+    title: 'Tradeoffs',
+    focus: 'Practice saying why one approach was chosen over another.',
+    checklist: ['Pick one decision.', 'Name the simpler option.', 'Name the more scalable option.'],
+  },
+  {
+    id: 'day-12-full-walkthrough',
+    day: 12,
+    title: 'Full walkthrough',
+    focus: 'Run a calm project walkthrough from problem to demo to next steps.',
+    checklist: ['Open with the user problem.', 'Show three features.', 'Close with one improvement.'],
+  },
+  {
+    id: 'day-13-questions',
+    day: 13,
+    title: 'Question practice',
+    focus: 'Answer mixed prompts without reading from notes.',
+    checklist: ['Answer one project prompt.', 'Answer one stack translation prompt.', 'Answer one debugging prompt.'],
+  },
+  {
+    id: 'day-14-final-pass',
+    day: 14,
+    title: 'Final pass',
+    focus: 'Tighten the explanation and remove rambling.',
+    checklist: ['Keep the opening under one minute.', 'Keep each answer concrete.', 'Write the one thing to improve next.'],
   },
 ];

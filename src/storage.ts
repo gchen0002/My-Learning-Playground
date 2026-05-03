@@ -4,7 +4,9 @@ export type StorageKey =
   | 'mlp.quizAttempts'
   | 'mlp.exerciseResponses'
   | 'mlp.drillAttempts'
-  | 'mlp.mockInterviewAttempts';
+  | 'mlp.mockInterviewAttempts'
+  | 'mlp.guidedPracticeResponses'
+  | 'mlp.practicePlanCompletions';
 
 export const storageKeys = {
   notes: 'mlp.notes',
@@ -13,6 +15,8 @@ export const storageKeys = {
   exerciseResponses: 'mlp.exerciseResponses',
   drillAttempts: 'mlp.drillAttempts',
   mockInterviewAttempts: 'mlp.mockInterviewAttempts',
+  guidedPracticeResponses: 'mlp.guidedPracticeResponses',
+  practicePlanCompletions: 'mlp.practicePlanCompletions',
 } as const;
 
 export function readJson<T>(key: StorageKey, fallback: T): T {

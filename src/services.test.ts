@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { challenges, codeDrills, exercises, quizQuestions, topics } from './content';
+import { challenges, codeDrills, exercises, guidedPrompts, practicePlanTasks, quizQuestions, topics } from './content';
 import {
   createMockInterviewPrompt,
+  deleteGuidedPracticeResponse,
   deleteDrillAttempt,
   exportLocalData,
   filterDrills,
@@ -11,14 +12,18 @@ import {
   getDrillAttempts,
   getDrillsForTopic,
   getExercisesForTopic,
+  getGuidedPracticeResponses,
   getNotes,
+  getPracticePlanCompletions,
   getProgress,
   getQuestionsForTopic,
   importLocalData,
+  saveGuidedPracticeResponse,
   saveDrillAttempt,
   saveExerciseResponse,
   saveNote,
   scoreQuiz,
+  setPracticePlanTaskCompletion,
   setProgress,
   submitQuizAttempt,
 } from './services';
@@ -181,6 +186,58 @@ describe('code drills', () => {
     deleteDrillAttempt(updatedAttempt.id);
 
     expect(getDrillAttempts()).toHaveLength(0);
+  });
+});
+
+describe('guided practice', () => {
+  it('keeps guided content supplied with useful prompts', () => {
+    for (const prompt of guidedPrompts) {
+      expect(prompt.title.length).toBeGreaterThan(0);
+      expect(prompt.prompt.length).toBeGreaterThan(0);
+      expect(prompt.guidance.length).toBeGreaterThan(0);
+      expect(prompt.exampleShape.length).toBeGreaterThan(0);
+    }
+
+    expect(practicePlanTasks).toHaveLength(14);
+  });
+
+  it('saves, updates, exports, imports, and deletes guided answers', () => {
+    const prompt = guidedPrompts[0];
+    const firstResponse = saveGuidedPracticeResponse({
+      promptId: prompt.id,
+      body: 'First pass.',
+    });
+    const updatedResponse = saveGuidedPracticeResponse({
+      promptId: prompt.id,
+      body: 'Sharper second pass.',
+    });
+
+    expect(updatedResponse.id).toBe(firstResponse.id);
+    expect(getGuidedPracticeResponses()).toHaveLength(1);
+    expect(getGuidedPracticeResponses()[0]?.body).toBe('Sharper second pass.');
+
+    const exported = exportLocalData();
+    localStorage.clear();
+    importLocalData(exported);
+
+    expect(getGuidedPracticeResponses()[0]?.promptId).toBe(prompt.id);
+
+    deleteGuidedPracticeResponse(updatedResponse.id);
+
+    expect(getGuidedPracticeResponses()).toHaveLength(0);
+  });
+
+  it('tracks practice plan completion locally', () => {
+    const task = practicePlanTasks[0];
+
+    setPracticePlanTaskCompletion(task.id, true);
+
+    expect(getPracticePlanCompletions()[task.id]).toBe(true);
+
+    setPracticePlanTaskCompletion(task.id, false);
+
+    expect(getPracticePlanCompletions()[task.id]).toBe(false);
+    expect(exportLocalData().practicePlanCompletions[task.id]).toBe(false);
   });
 });
 

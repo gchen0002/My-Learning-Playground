@@ -22,7 +22,11 @@ import {
   challenges,
   codeDrills,
   exercises,
+  guidedPrompts,
+  practicePlanTasks,
+  projectStoryCards,
   quizQuestions,
+  stackTranslationExercises,
   topics,
   type Challenge,
   type CodeDrill,
@@ -34,6 +38,7 @@ import {
 } from './content';
 import {
   createMockInterviewPrompt,
+  deleteGuidedPracticeResponse,
   deleteDrillAttempt,
   deleteExerciseResponse,
   deleteNote,
@@ -46,8 +51,10 @@ import {
   getChecklistScore,
   getExercisesForTopic,
   getExerciseResponses,
+  getGuidedPracticeResponses,
   getMockInterviewAttempts,
   getNotes,
+  getPracticePlanCompletions,
   getProgress,
   getQuestionsForTopic,
   getQuizAttempts,
@@ -55,23 +62,27 @@ import {
   resetLocalProgress,
   saveExerciseResponse,
   saveDrillAttempt,
+  saveGuidedPracticeResponse,
   saveMockInterviewAttempt,
   saveNote,
+  setPracticePlanTaskCompletion,
   setProgress,
   submitQuizAttempt,
   type ChecklistResult,
   type DesignResponseSections,
   type DrillAttempt,
   type ExerciseResponse,
+  type GuidedPracticeResponse,
   type LocalDataExport,
   type MockInterviewAttempt,
   type Note,
+  type PracticePlanCompletions,
   type ProgressMap,
   type ProgressStatus,
   type QuizAttempt,
 } from './services';
 
-type View = 'learn' | 'quiz' | 'drills' | 'exercises' | 'design' | 'mock' | 'progress';
+type View = 'learn' | 'quiz' | 'drills' | 'exercises' | 'design' | 'guided' | 'mock' | 'progress';
 type LearnScreen = 'home' | 'topic';
 type LearnTab = 'overview' | 'breakdown' | 'mental' | 'practice';
 type ProgressTab = 'overview' | 'history';
@@ -83,6 +94,7 @@ type RouteState = {
   activeDrillId: string;
   activeExerciseId: string;
   activeChallengeId: string;
+  activeGuidedPromptId: string;
   quizTopicId: string | null;
 };
 
@@ -92,7 +104,8 @@ const views: { id: View; label: string }[] = [
   { id: 'drills', label: 'Code Drills' },
   { id: 'exercises', label: 'Exercises' },
   { id: 'design', label: 'Design Mode' },
-  { id: 'mock', label: 'Mock Interview' },
+  { id: 'guided', label: 'Guided Practice' },
+  { id: 'mock', label: 'Mixed Practice' },
   { id: 'progress', label: 'Progress' },
 ];
 
@@ -102,6 +115,7 @@ const viewDescriptions: Record<View, string> = {
   drills: 'Practice implementation thinking with focused JavaScript drills.',
   exercises: 'Write structured responses for CRUD and system design prompts.',
   design: 'Break a system down into requirements, entities, APIs, and tradeoffs.',
+  guided: 'Practice explaining projects, choices, tradeoffs, and next steps.',
   mock: 'Run a calm practice set that mixes concept, CRUD, and design thinking.',
   progress: 'Review your saved work, history, and what to revisit next.',
 };
@@ -160,6 +174,8 @@ function refreshLocalState() {
     exerciseResponses: getExerciseResponses(),
     drillAttempts: getDrillAttempts(),
     mockAttempts: getMockInterviewAttempts(),
+    guidedResponses: getGuidedPracticeResponses(),
+    practicePlanCompletions: getPracticePlanCompletions(),
   };
 }
 
@@ -199,6 +215,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: exercises[0].id,
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: null,
     };
   }
@@ -213,6 +230,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: exercises[0].id,
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: topicId,
     };
   }
@@ -226,6 +244,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: findValidId(codeDrills, itemId, codeDrills[0].id),
       activeExerciseId: exercises[0].id,
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: null,
     };
   }
@@ -239,6 +258,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: findValidId(exercises, itemId, exercises[0].id),
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: null,
     };
   }
@@ -252,6 +272,21 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: exercises[0].id,
       activeChallengeId: findValidId(challenges, itemId, challenges[0].id),
+      activeGuidedPromptId: guidedPrompts[0].id,
+      quizTopicId: null,
+    };
+  }
+
+  if (section === 'guided-practice' || section === 'guided') {
+    return {
+      activeView: 'guided',
+      learnScreen: 'home',
+      progressTab: 'overview',
+      activeTopicId: topics[0].id,
+      activeDrillId: codeDrills[0].id,
+      activeExerciseId: exercises[0].id,
+      activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: findValidId(guidedPrompts, itemId, guidedPrompts[0].id),
       quizTopicId: null,
     };
   }
@@ -265,6 +300,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: exercises[0].id,
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: null,
     };
   }
@@ -278,6 +314,7 @@ function parseRoute(pathname = window.location.pathname): RouteState {
       activeDrillId: codeDrills[0].id,
       activeExerciseId: exercises[0].id,
       activeChallengeId: challenges[0].id,
+      activeGuidedPromptId: guidedPrompts[0].id,
       quizTopicId: null,
     };
   }
@@ -289,6 +326,7 @@ function buildRoutePath({
   activeChallengeId,
   activeDrillId,
   activeExerciseId,
+  activeGuidedPromptId,
   activeTopicId,
   activeView,
   learnScreen,
@@ -315,6 +353,10 @@ function buildRoutePath({
     return `/design/${activeChallengeId}`;
   }
 
+  if (activeView === 'guided') {
+    return `/guided-practice/${activeGuidedPromptId}`;
+  }
+
   if (activeView === 'mock') {
     return '/mock';
   }
@@ -335,6 +377,7 @@ export function App() {
   const [activeDrillId, setActiveDrillId] = useState(initialRoute.activeDrillId);
   const [activeExerciseId, setActiveExerciseId] = useState(initialRoute.activeExerciseId);
   const [activeChallengeId, setActiveChallengeId] = useState(initialRoute.activeChallengeId);
+  const [activeGuidedPromptId, setActiveGuidedPromptId] = useState(initialRoute.activeGuidedPromptId);
   const [categoryFilter, setCategoryFilter] = useState<LearningCategory | 'All'>('All');
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | 'All'>('All');
   const [drillTopicFilter, setDrillTopicFilter] = useState<string | 'All'>('All');
@@ -345,6 +388,8 @@ export function App() {
   const [exerciseResponses, setExerciseResponses] = useState<ExerciseResponse[]>(() => getExerciseResponses());
   const [drillAttempts, setDrillAttempts] = useState<DrillAttempt[]>(() => getDrillAttempts());
   const [mockAttempts, setMockAttempts] = useState<MockInterviewAttempt[]>(() => getMockInterviewAttempts());
+  const [guidedResponses, setGuidedResponses] = useState<GuidedPracticeResponse[]>(() => getGuidedPracticeResponses());
+  const [practicePlanCompletions, setPracticePlanCompletions] = useState<PracticePlanCompletions>(() => getPracticePlanCompletions());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [latestAttempt, setLatestAttempt] = useState<QuizAttempt | null>(null);
   const [quizTopicId, setQuizTopicId] = useState<string | null>(initialRoute.quizTopicId);
@@ -361,12 +406,17 @@ export function App() {
   const [mockPrompt, setMockPrompt] = useState(() => createMockInterviewPrompt());
   const [mockNotes, setMockNotes] = useState('');
   const [showMockAnswers, setShowMockAnswers] = useState(false);
+  const [guidedDraft, setGuidedDraft] = useState(() => {
+    return getGuidedPracticeResponses().find((response) => response.promptId === initialRoute.activeGuidedPromptId)?.body ?? '';
+  });
+  const [showGuidedExamples, setShowGuidedExamples] = useState(false);
   const [importMessage, setImportMessage] = useState('');
 
   const activeTopic = topics.find((topic) => topic.id === activeTopicId) ?? topics[0];
   const activeDrill = codeDrills.find((drill) => drill.id === activeDrillId) ?? codeDrills[0];
   const activeExercise = exercises.find((exercise) => exercise.id === activeExerciseId) ?? exercises[0];
   const activeChallenge = challenges.find((challenge) => challenge.id === activeChallengeId) ?? challenges[0];
+  const activeGuidedPrompt = guidedPrompts.find((prompt) => prompt.id === activeGuidedPromptId) ?? guidedPrompts[0];
   const filteredExercises = useMemo(() => filterExercises(categoryFilter, difficultyFilter), [categoryFilter, difficultyFilter]);
   const filteredDrills = useMemo(() => filterDrills(drillTopicFilter, drillDifficultyFilter), [drillTopicFilter, drillDifficultyFilter]);
   const completedCount = topics.filter((topic) => progress[topic.id] === 'completed').length;
@@ -376,6 +426,7 @@ export function App() {
       : Math.round((attempts.reduce((total, attempt) => total + attempt.score / attempt.total, 0) / attempts.length) * 100);
   const savedExerciseResponse = exerciseResponses.find((response) => response.exerciseId === activeExercise.id);
   const savedDrillAttempt = drillAttempts.find((attempt) => attempt.drillId === activeDrill.id);
+  const savedGuidedResponse = guidedResponses.find((response) => response.promptId === activeGuidedPrompt.id);
   const activeTopicQuestions = getQuestionsForTopic(activeTopic.id);
   const activeTopicDrills = getDrillsForTopic(activeTopic.id);
   const activeTopicExercises = getExercisesForTopic(activeTopic.id);
@@ -384,7 +435,7 @@ export function App() {
   const quizTopic = quizTopicId ? topics.find((topic) => topic.id === quizTopicId) : null;
   const activeViewMeta = views.find((view) => view.id === activeView) ?? views[0];
   const currentTopicProgress = progress[activeTopic.id] ?? 'not_started';
-  const practiceViews: View[] = ['quiz', 'drills', 'exercises', 'design', 'mock'];
+  const practiceViews: View[] = ['guided', 'quiz', 'drills', 'exercises', 'design', 'mock'];
   const isPracticeView = practiceViews.includes(activeView);
   const primaryNav = isPracticeView ? 'practice' : activeView;
   const topicGroups = useMemo(() => {
@@ -422,6 +473,8 @@ export function App() {
     setExerciseResponses(nextState.exerciseResponses);
     setDrillAttempts(nextState.drillAttempts);
     setMockAttempts(nextState.mockAttempts);
+    setGuidedResponses(nextState.guidedResponses);
+    setPracticePlanCompletions(nextState.practicePlanCompletions);
   }
 
   function updateProgress(topicId: string, status: ProgressStatus) {
@@ -485,7 +538,7 @@ export function App() {
     }
 
     if (target === 'practice') {
-      setActiveView('drills');
+      setActiveView('guided');
       return;
     }
 
@@ -548,6 +601,29 @@ export function App() {
   function handleSelectChallenge(id: string) {
     setActiveChallengeId(id);
     setShowDesignAnswer(false);
+  }
+
+  function handleSelectGuidedPrompt(id: string) {
+    const response = guidedResponses.find((item) => item.promptId === id);
+    setActiveGuidedPromptId(id);
+    setGuidedDraft(response?.body ?? '');
+    setShowGuidedExamples(false);
+  }
+
+  function handleSaveGuidedResponse() {
+    if (!guidedDraft.trim()) {
+      return;
+    }
+
+    saveGuidedPracticeResponse({
+      promptId: activeGuidedPrompt.id,
+      body: guidedDraft,
+    });
+    setGuidedResponses(getGuidedPracticeResponses());
+  }
+
+  function handleTogglePracticePlanTask(taskId: string, completed: boolean) {
+    setPracticePlanCompletions(setPracticePlanTaskCompletion(taskId, completed));
   }
 
   function handleSaveExerciseResponse() {
@@ -626,6 +702,10 @@ export function App() {
     setShowDesignAnswer(false);
     setMockNotes('');
     setShowMockAnswers(false);
+    setGuidedResponses([]);
+    setPracticePlanCompletions({});
+    setGuidedDraft('');
+    setShowGuidedExamples(false);
     setImportMessage('');
   }
 
@@ -634,6 +714,7 @@ export function App() {
     setLearnScreen(route.learnScreen);
     setProgressTab(route.progressTab);
     setActiveTopicId(route.activeTopicId);
+    setActiveGuidedPromptId(route.activeGuidedPromptId);
     setQuizTopicId(route.quizTopicId);
 
     if (route.activeView === 'drills') {
@@ -653,6 +734,10 @@ export function App() {
     } else {
       setActiveChallengeId(route.activeChallengeId);
     }
+
+    if (route.activeView === 'guided') {
+      handleSelectGuidedPrompt(route.activeGuidedPromptId);
+    }
   }
 
   useEffect(() => {
@@ -669,6 +754,7 @@ export function App() {
       activeChallengeId,
       activeDrillId,
       activeExerciseId,
+      activeGuidedPromptId,
       activeTopicId,
       activeView,
       learnScreen,
@@ -680,7 +766,7 @@ export function App() {
     if (currentPath !== routePath) {
       window.history.pushState(null, '', routePathWithBase(routePath));
     }
-  }, [activeChallengeId, activeDrillId, activeExerciseId, activeTopicId, activeView, learnScreen, progressTab, quizTopicId]);
+  }, [activeChallengeId, activeDrillId, activeExerciseId, activeGuidedPromptId, activeTopicId, activeView, learnScreen, progressTab, quizTopicId]);
 
   return (
     <main className={`app-shell mode-${colorMode}`}>
@@ -790,6 +876,17 @@ export function App() {
           </div>
         </header>
         {importMessage && <p className="inline-message">{importMessage}</p>}
+        {isPracticeView && (
+          <PracticeSwitcher
+            activeView={activeView}
+            onOpen={(view) => {
+              setActiveView(view);
+              if (view === 'guided') {
+                handleSelectGuidedPrompt(activeGuidedPrompt.id);
+              }
+            }}
+          />
+        )}
 
         {activeView === 'learn' && learnScreen === 'home' && (
           <section className="learn-home">
@@ -966,6 +1063,151 @@ export function App() {
                 onChange={setNoteDraft}
                 onSave={() => handleSaveNote(activeTopic.id, 'topic')}
               />
+            </article>
+          </section>
+        )}
+
+        {activeView === 'guided' && (
+          <section className="two-column guided-screen">
+            <div className="panel-list">
+              {guidedPrompts.map((prompt) => (
+                <button
+                  className={activeGuidedPrompt.id === prompt.id ? 'list-card active' : 'list-card'}
+                  key={prompt.id}
+                  onClick={() => handleSelectGuidedPrompt(prompt.id)}
+                  type="button"
+                >
+                  <span>{prompt.group}</span>
+                  <strong>{prompt.title}</strong>
+                  <small>{prompt.prompt}</small>
+                </button>
+              ))}
+            </div>
+            <article className="detail-panel">
+              <div className="detail-heading">
+                <NotebookPen aria-hidden="true" size={22} />
+                <div>
+                  <p className="eyebrow">{activeGuidedPrompt.group}</p>
+                  <h3>{activeGuidedPrompt.title}</h3>
+                </div>
+              </div>
+              <p>{activeGuidedPrompt.prompt}</p>
+              <InfoColumns
+                concepts={activeGuidedPrompt.exampleShape}
+                edgeCases={['Keep it concrete', 'Avoid rambling', 'End with the next improvement']}
+                hints={activeGuidedPrompt.guidance}
+              />
+              <section className="structured-form">
+                <label>
+                  <span>Your answer</span>
+                  <textarea
+                    onChange={(event) => setGuidedDraft(event.target.value)}
+                    placeholder="Write a clear, reusable explanation. Keep it specific enough that you could say it out loud."
+                    rows={8}
+                    value={guidedDraft}
+                  />
+                </label>
+              </section>
+              <div className="action-row">
+                <button className="primary-button" disabled={!guidedDraft.trim()} onClick={handleSaveGuidedResponse} type="button">
+                  <Save aria-hidden="true" size={18} />
+                  Save answer
+                </button>
+                {savedGuidedResponse && (
+                  <button className="text-button" onClick={() => {
+                    deleteGuidedPracticeResponse(savedGuidedResponse.id);
+                    setGuidedResponses(getGuidedPracticeResponses());
+                    setGuidedDraft('');
+                  }} type="button">
+                    <Trash2 aria-hidden="true" size={15} />
+                    Delete saved answer
+                  </button>
+                )}
+                <button className="secondary-button" onClick={() => setShowGuidedExamples(!showGuidedExamples)} type="button">
+                  {showGuidedExamples ? 'Hide examples' : 'Show examples'}
+                </button>
+              </div>
+              {showGuidedExamples && (
+                <section className="recommended-panel">
+                  <p className="section-label">Answer shape</p>
+                  <MiniList title="Simple structure" items={activeGuidedPrompt.exampleShape} />
+                </section>
+              )}
+
+              <section className="guided-section">
+                <div className="section-heading">
+                  <div>
+                    <p className="section-label">Project stories</p>
+                    <h3>Use real features as talking points</h3>
+                  </div>
+                </div>
+                <div className="mock-grid">
+                  {projectStoryCards.map((card) => (
+                    <article className="prompt-card" key={card.id}>
+                      <span>{card.title}</span>
+                      <strong>{card.focus}</strong>
+                      <ul className="compact-list">
+                        {card.talkingPoints.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                      <p>{card.improvementPrompt}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="guided-section">
+                <div className="section-heading">
+                  <div>
+                    <p className="section-label">Stack translation</p>
+                    <h3>Move from local thinking to service thinking</h3>
+                  </div>
+                </div>
+                <div className="answer-section-grid">
+                  {stackTranslationExercises.map((exercise) => (
+                    <article className="answer-section" key={exercise.id}>
+                      <strong>{exercise.title}</strong>
+                      <p>{exercise.localFeature}</p>
+                      <span>{exercise.targetShape}</span>
+                      <ul className="compact-list">
+                        {exercise.questions.map((question) => (
+                          <li key={question}>{question}</li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="guided-section">
+                <div className="section-heading">
+                  <div>
+                    <p className="section-label">Practice plan</p>
+                    <h3>Fourteen small passes</h3>
+                  </div>
+                  <strong>{Object.values(practicePlanCompletions).filter(Boolean).length}/{practicePlanTasks.length} done</strong>
+                </div>
+                <div className="practice-plan-list">
+                  {practicePlanTasks.map((task) => (
+                    <label className="practice-plan-row" key={task.id}>
+                      <input
+                        checked={Boolean(practicePlanCompletions[task.id])}
+                        onChange={(event) => handleTogglePracticePlanTask(task.id, event.target.checked)}
+                        type="checkbox"
+                      />
+                      <span>Day {task.day}</span>
+                      <strong>{task.title}</strong>
+                      <small>{task.focus}</small>
+                      <ul className="compact-list practice-plan-checklist">
+                        {task.checklist.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </label>
+                  ))}
+                </div>
+              </section>
             </article>
           </section>
         )}
@@ -1268,7 +1510,7 @@ export function App() {
               <Play aria-hidden="true" size={22} />
               <div>
                 <p className="eyebrow">30-45 minute practice set</p>
-                <h3>Mock Interview</h3>
+                <h3>Mixed Practice</h3>
               </div>
             </div>
             <div className="mock-grid">
@@ -1285,7 +1527,7 @@ export function App() {
             <div className="action-row">
               <button className="primary-button" disabled={!mockNotes.trim()} onClick={handleSaveMockAttempt} type="button">
                 <Save aria-hidden="true" size={18} />
-                Save mock attempt
+                Save practice attempt
               </button>
               <button className="secondary-button" onClick={handleNewMockPrompt} type="button">
                 New prompt set
@@ -1334,7 +1576,7 @@ export function App() {
                 <Metric icon={<ClipboardList aria-hidden="true" size={21} />} label="Topics started" value={String(topics.length - topics.filter((topic) => progress[topic.id] === 'not_started').length)} />
                 <Metric icon={<CheckCircle2 aria-hidden="true" size={21} />} label="Topics completed" value={String(completedCount)} />
                 <Metric icon={<Code2 aria-hidden="true" size={21} />} label="Average quiz score" value={`${averageScore}%`} />
-                <Metric icon={<Play aria-hidden="true" size={21} />} label="Mock interviews" value={String(mockAttempts.length)} />
+                <Metric icon={<Play aria-hidden="true" size={21} />} label="Mixed practice" value={String(mockAttempts.length)} />
                 <HistoryPanel title="Recent activity" empty="No saved work yet.">
                   {notes.slice(0, 4).map((note) => (
                     <article className="note-card" key={note.id}>
@@ -1390,7 +1632,7 @@ export function App() {
                     </div>
                   ))}
                 </HistoryPanel>
-                <HistoryPanel title="Mock interview history" empty="No mock interviews saved yet.">
+                <HistoryPanel title="Mixed practice history" empty="No mixed practice saved yet.">
                   {mockAttempts.map((attempt) => (
                     <div className="history-row" key={attempt.id}>
                       <span>{formatDate(attempt.createdAt)}</span>
@@ -1413,6 +1655,27 @@ type NoteComposerProps = {
   onChange: (value: string) => void;
   onSave: () => void;
 };
+
+function PracticeSwitcher({ activeView, onOpen }: { activeView: View; onOpen: (view: View) => void }) {
+  const practiceLinks: { id: View; label: string }[] = [
+    { id: 'guided', label: 'Guided Practice' },
+    { id: 'drills', label: 'Code Drills' },
+    { id: 'exercises', label: 'Exercises' },
+    { id: 'design', label: 'Design Mode' },
+    { id: 'quiz', label: 'Quiz' },
+    { id: 'mock', label: 'Mixed Practice' },
+  ];
+
+  return (
+    <nav className="practice-switcher" aria-label="Practice modes">
+      {practiceLinks.map((link) => (
+        <button className={activeView === link.id ? 'tab-button active' : 'tab-button'} key={link.id} onClick={() => onOpen(link.id)} type="button">
+          {link.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 function NoteComposer({ buttonLabel, draft, onChange, onSave }: NoteComposerProps) {
   return (

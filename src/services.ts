@@ -64,6 +64,16 @@ export type MockInterviewAttempt = {
   createdAt: string;
 };
 
+export type GuidedPracticeResponse = {
+  id: string;
+  promptId: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PracticePlanCompletions = Record<string, boolean>;
+
 export type LocalDataExport = {
   version: 1;
   exportedAt: string;
@@ -73,6 +83,8 @@ export type LocalDataExport = {
   exerciseResponses: ExerciseResponse[];
   drillAttempts: DrillAttempt[];
   mockInterviewAttempts: MockInterviewAttempt[];
+  guidedPracticeResponses: GuidedPracticeResponse[];
+  practicePlanCompletions: PracticePlanCompletions;
 };
 
 export function scoreQuiz(questions: QuizQuestion[], answers: Record<string, string>) {
@@ -255,6 +267,46 @@ export function saveMockInterviewAttempt(input: Omit<MockInterviewAttempt, 'id' 
   return attempt;
 }
 
+export function getGuidedPracticeResponses() {
+  return readJson<GuidedPracticeResponse[]>(storageKeys.guidedPracticeResponses, []);
+}
+
+export function saveGuidedPracticeResponse(input: Pick<GuidedPracticeResponse, 'promptId' | 'body'>) {
+  const now = new Date().toISOString();
+  const existing = getGuidedPracticeResponses().find((response) => response.promptId === input.promptId);
+  const nextResponse: GuidedPracticeResponse = {
+    id: existing?.id ?? createId(),
+    promptId: input.promptId,
+    body: input.body.trim(),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  const nextResponses = [nextResponse, ...getGuidedPracticeResponses().filter((response) => response.promptId !== input.promptId)];
+  writeJson(storageKeys.guidedPracticeResponses, nextResponses);
+  return nextResponse;
+}
+
+export function deleteGuidedPracticeResponse(id: string) {
+  writeJson(
+    storageKeys.guidedPracticeResponses,
+    getGuidedPracticeResponses().filter((response) => response.id !== id),
+  );
+}
+
+export function getPracticePlanCompletions() {
+  return readJson<PracticePlanCompletions>(storageKeys.practicePlanCompletions, {});
+}
+
+export function setPracticePlanTaskCompletion(taskId: string, completed: boolean) {
+  const nextCompletions = {
+    ...getPracticePlanCompletions(),
+    [taskId]: completed,
+  };
+  writeJson(storageKeys.practicePlanCompletions, nextCompletions);
+  return nextCompletions;
+}
+
 export function exportLocalData(): LocalDataExport {
   return {
     version: 1,
@@ -265,6 +317,8 @@ export function exportLocalData(): LocalDataExport {
     exerciseResponses: getExerciseResponses(),
     drillAttempts: getDrillAttempts(),
     mockInterviewAttempts: getMockInterviewAttempts(),
+    guidedPracticeResponses: getGuidedPracticeResponses(),
+    practicePlanCompletions: getPracticePlanCompletions(),
   };
 }
 
@@ -279,6 +333,8 @@ export function importLocalData(data: LocalDataExport) {
   writeJson(storageKeys.exerciseResponses, Array.isArray(data.exerciseResponses) ? data.exerciseResponses : []);
   writeJson(storageKeys.drillAttempts, Array.isArray(data.drillAttempts) ? data.drillAttempts : []);
   writeJson(storageKeys.mockInterviewAttempts, Array.isArray(data.mockInterviewAttempts) ? data.mockInterviewAttempts : []);
+  writeJson(storageKeys.guidedPracticeResponses, Array.isArray(data.guidedPracticeResponses) ? data.guidedPracticeResponses : []);
+  writeJson(storageKeys.practicePlanCompletions, data.practicePlanCompletions ?? {});
 }
 
 export function resetLocalProgress() {
@@ -288,4 +344,6 @@ export function resetLocalProgress() {
   removeJson(storageKeys.exerciseResponses);
   removeJson(storageKeys.drillAttempts);
   removeJson(storageKeys.mockInterviewAttempts);
+  removeJson(storageKeys.guidedPracticeResponses);
+  removeJson(storageKeys.practicePlanCompletions);
 }
